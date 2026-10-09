@@ -55,7 +55,10 @@ class TaskEmitter(
         SearchContext.empty(),
         UnpagedSorted(Sort.by(Sort.Order.asc("seriesId"), Sort.Order.asc("number"))),
       ).content
-      .map { Task.AnalyzeBook(it.id, groupId = it.seriesId) }
+      // groupId was seriesId: neither AnalyzeBook nor the RefreshBookMetadata it
+      // cascades writes the SERIES table, so series-level grouping only serializes
+      // books that could safely analyze/refresh in parallel.
+      .map { Task.AnalyzeBook(it.id, groupId = it.id) }
       .let { submitTasks(it) }
   }
 
@@ -179,7 +182,7 @@ class TaskEmitter(
     capabilities: Set<BookMetadataPatchCapability> = BookMetadataPatchCapability.entries.toSet(),
     priority: Int = DEFAULT_PRIORITY,
   ) {
-    submitTask(Task.RefreshBookMetadata(book.id, capabilities, priority, book.seriesId))
+    submitTask(Task.RefreshBookMetadata(book.id, capabilities, priority, book.id))
   }
 
   fun refreshBookMetadata(
@@ -188,7 +191,7 @@ class TaskEmitter(
     priority: Int = DEFAULT_PRIORITY,
   ) {
     books
-      .map { Task.RefreshBookMetadata(it.id, capabilities, priority, it.seriesId) }
+      .map { Task.RefreshBookMetadata(it.id, capabilities, priority, it.id) }
       .let { submitTasks(it) }
   }
 

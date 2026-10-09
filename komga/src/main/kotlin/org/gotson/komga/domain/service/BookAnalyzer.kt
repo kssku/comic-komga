@@ -15,6 +15,7 @@ import org.gotson.komga.domain.model.MediaUnsupportedException
 import org.gotson.komga.domain.model.NoThumbnailFoundException
 import org.gotson.komga.domain.model.ThumbnailBook
 import org.gotson.komga.domain.model.TypedBytes
+import org.gotson.komga.domain.persistence.MediaRepository
 import org.gotson.komga.infrastructure.configuration.KomgaSettingsProvider
 import org.gotson.komga.infrastructure.hash.Hasher
 import org.gotson.komga.infrastructure.image.ImageAnalyzer
@@ -45,6 +46,7 @@ class BookAnalyzer(
   private val imageConverter: ImageConverter,
   private val imageAnalyzer: ImageAnalyzer,
   private val hasher: Hasher,
+  private val mediaRepository: MediaRepository,
   @param:Value("#{@komgaProperties.pageHashing}") private val pageHashing: Int,
   private val komgaSettingsProvider: KomgaSettingsProvider,
   @Qualifier("thumbnailType")
@@ -100,6 +102,21 @@ class BookAnalyzer(
     mediaType: MediaType,
     analyzeDimensions: Boolean,
   ): Media {
+    // Cache short-circuit: when the page list has already been persisted (MEDIA_PAGE),
+    // reuse it instead of re-opening the archive. This is the key optimization for
+    // slow/remote mounts (e.g. CloudDrive2 over 115) — analysis opens every entry.
+    mediaRepository
+      .findByIdOrNull(book.id)
+      ?.takeIf {
+        it.status == Media.Status.READY &&
+          it.mediaType == mediaType.type &&
+          it.pages.isNotEmpty() &&
+          it.pageCount == it.pages.size
+      }?.let {
+        logger.info { "Reusing cached media for book: $book (${it.pageCount} pages)" }
+        return it
+      }
+
     val entries =
       try {
         divinaExtractors[mediaType.type]?.getEntries(book.path, analyzeDimensions)

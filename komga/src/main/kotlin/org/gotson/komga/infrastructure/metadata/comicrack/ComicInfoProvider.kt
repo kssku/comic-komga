@@ -18,6 +18,7 @@ import org.gotson.komga.infrastructure.metadata.BookMetadataProvider
 import org.gotson.komga.infrastructure.metadata.SeriesMetadataFromBookProvider
 import org.gotson.komga.infrastructure.metadata.comicrack.dto.ComicInfo
 import org.gotson.komga.infrastructure.metadata.comicrack.dto.Manga
+import org.gotson.komga.infrastructure.metadata.comicmeta.ComicMetaRepository
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
 import java.net.URI
@@ -33,6 +34,7 @@ class ComicInfoProvider(
   @param:Autowired(required = false) private val mapper: XmlMapper = XmlMapper(),
   private val bookAnalyzer: BookAnalyzer,
   private val isbnValidator: ISBNValidator,
+  private val comicMetaRepository: ComicMetaRepository,
 ) : BookMetadataProvider,
   SeriesMetadataFromBookProvider {
   override val capabilities =
@@ -45,9 +47,15 @@ class ComicInfoProvider(
       BookMetadataPatchCapability.AUTHORS,
       BookMetadataPatchCapability.READ_LISTS,
       BookMetadataPatchCapability.LINKS,
+      BookMetadataPatchCapability.TAGS,
     )
 
   override fun getBookMetadataFromBook(book: BookWithMedia): BookMetadataPatch? {
+    // Prefer the external comic metadata database when configured: it provides
+    // title and tags WITHOUT opening the book archive, so metadata refresh never
+    // triggers a download from the cloud drive. Falls back to the embedded XML.
+    comicMetaRepository.findBookMetadata(book.book.name)?.let { return it }
+
     getComicInfo(book)?.let { comicInfo ->
       val releaseDate =
         comicInfo.year?.let {

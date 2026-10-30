@@ -6,6 +6,7 @@ import org.gotson.komga.domain.model.BookPage
 import org.gotson.komga.domain.model.Dimension
 import org.gotson.komga.domain.model.EpubTocEntry
 import org.gotson.komga.domain.model.Media
+import org.gotson.komga.domain.model.MediaExtensionDivina
 import org.gotson.komga.domain.model.MediaExtensionEpub
 import org.gotson.komga.domain.model.MediaFile
 import org.gotson.komga.domain.model.MediaType
@@ -26,6 +27,7 @@ import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import java.time.LocalDateTime
+import java.time.temporal.ChronoUnit
 
 @SpringBootTest
 class MediaDaoTest(
@@ -317,6 +319,85 @@ class MediaDaoTest(
       assertThat(extension).isNotNull
       assertThat(extension).isInstanceOf(MediaExtensionEpub::class.java)
       assertThat(extension).isEqualTo(media.extension)
+    }
+
+    @Test
+    fun `given a media with divina extension when inserting then it is persisted and round-tripped`() {
+      // truncate to seconds: LocalDateTime round-trips through JSON with the precision Jackson writes
+      val lastModified = LocalDateTime.now().truncatedTo(ChronoUnit.SECONDS)
+      val extension =
+        MediaExtensionDivina(
+          bookFileLastModified = lastModified,
+          bookFileSize = 123456789L,
+        )
+      val media =
+        Media(
+          status = Media.Status.READY,
+          mediaType = "application/zip",
+          extension = extension,
+          bookId = book.id,
+        )
+
+      mediaDao.insert(media)
+
+      // proxy path: findById only records the class name
+      val created = mediaDao.findById(media.bookId)
+      assertThat(created.extension).isNotNull
+      assertThat(created.extension).isInstanceOf(ProxyExtension::class.java)
+      assertThat((created.extension as ProxyExtension).extensionClassName).isEqualTo(MediaExtensionDivina::class.qualifiedName)
+
+      // real deserialization path: GZIP + Jackson + Class.forName
+      val found = mediaDao.findExtensionByIdOrNull(media.bookId)
+      assertThat(found).isNotNull
+      assertThat(found).isInstanceOf(MediaExtensionDivina::class.java)
+      assertThat(found).isEqualTo(extension)
+
+      val divina = found as MediaExtensionDivina
+      assertThat(divina.bookFileLastModified).isEqualTo(lastModified)
+      assertThat(divina.bookFileSize).isEqualTo(123456789L)
+    }
+
+    @Test
+    fun `given a media with divina extension with null fields when inserting then nulls are preserved`() {
+      val extension = MediaExtensionDivina(bookFileLastModified = null, bookFileSize = null)
+      val media =
+        Media(
+          status = Media.Status.READY,
+          mediaType = "application/zip",
+          extension = extension,
+          bookId = book.id,
+        )
+
+      mediaDao.insert(media)
+
+      val found = mediaDao.findExtensionByIdOrNull(media.bookId)
+      assertThat(found).isNotNull
+      assertThat(found).isInstanceOf(MediaExtensionDivina::class.java)
+      assertThat(found).isEqualTo(extension)
+
+      val divina = found as MediaExtensionDivina
+      assertThat(divina.bookFileLastModified).isNull()
+      assertThat(divina.bookFileSize).isNull()
+    }
+
+    @Test
+    fun `given a media with divina extension when reading back then it is not another extension type`() {
+      val extension = MediaExtensionDivina(bookFileLastModified = LocalDateTime.now().truncatedTo(ChronoUnit.SECONDS), bookFileSize = 42L)
+      val media =
+        Media(
+          status = Media.Status.READY,
+          mediaType = "application/zip",
+          extension = extension,
+          bookId = book.id,
+        )
+
+      mediaDao.insert(media)
+
+      val found = mediaDao.findExtensionByIdOrNull(media.bookId)
+      assertThat(found).isNotNull
+      assertThat(found).isNotInstanceOf(MediaExtensionEpub::class.java)
+      assertThat(found).isNotInstanceOf(ProxyExtension::class.java)
+      assertThat(found).isInstanceOf(MediaExtensionDivina::class.java)
     }
   }
 

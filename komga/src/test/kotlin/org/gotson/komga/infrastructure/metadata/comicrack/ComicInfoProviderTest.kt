@@ -13,6 +13,7 @@ import org.gotson.komga.domain.model.SeriesMetadata
 import org.gotson.komga.domain.model.WebLink
 import org.gotson.komga.domain.model.makeBook
 import org.gotson.komga.domain.service.BookAnalyzer
+import org.gotson.komga.infrastructure.metadata.comicmeta.ComicMetaRepository
 import org.gotson.komga.infrastructure.metadata.comicrack.dto.AgeRating
 import org.gotson.komga.infrastructure.metadata.comicrack.dto.ComicInfo
 import org.gotson.komga.infrastructure.metadata.comicrack.dto.Manga
@@ -36,8 +37,9 @@ class ComicInfoProviderTest {
       every { it.getFileContent(any(), "ComicInfo.xml") } returns ByteArray(0)
     }
   private val isbnValidator = ISBNValidator(true)
+  private val mockComicMetaRepository = mockk<ComicMetaRepository>()
 
-  private val comicInfoProvider = ComicInfoProvider(mockMapper, mockAnalyzer, isbnValidator)
+  private val comicInfoProvider = ComicInfoProvider(mockMapper, mockAnalyzer, isbnValidator, mockComicMetaRepository)
 
   private val book = makeBook("book")
   private val media =
@@ -532,7 +534,7 @@ class ComicInfoProviderTest {
       return BookWithMedia(makeBook("book", url = bookFile.toUri().toURL()), media)
     }
 
-    private val realProvider = ComicInfoProvider(XmlMapper(), mockAnalyzer, isbnValidator)
+    private val realProvider = ComicInfoProvider(XmlMapper(), mockAnalyzer, isbnValidator, mockk<ComicMetaRepository>())
 
     @Test
     fun `given external comic info and importExternalXml when getting series metadata then external file is used`() {

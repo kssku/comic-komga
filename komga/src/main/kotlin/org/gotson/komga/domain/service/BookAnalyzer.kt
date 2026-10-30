@@ -6,6 +6,7 @@ import org.gotson.komga.domain.model.BookPage
 import org.gotson.komga.domain.model.BookWithMedia
 import org.gotson.komga.domain.model.Dimension
 import org.gotson.komga.domain.model.Media
+import org.gotson.komga.domain.model.MediaExtensionDivina
 import org.gotson.komga.domain.model.MediaExtensionEpub
 import org.gotson.komga.domain.model.MediaFile
 import org.gotson.komga.domain.model.MediaNotReadyException
@@ -105,6 +106,12 @@ class BookAnalyzer(
     // Cache short-circuit: when the page list has already been persisted (MEDIA_PAGE),
     // reuse it instead of re-opening the archive. This is the key optimization for
     // slow/remote mounts (e.g. CloudDrive2 over 115) — analysis opens every entry.
+    //
+    // The cached media is only reused when the recorded file fingerprint still matches the
+    // current book. Without that check, replacing the archive with a different file of the
+    // same path would keep serving stale page lists. Older rows have no fingerprint
+    // (MediaExtensionDivina missing or from another extension type) and therefore always
+    // fall through to a full analysis, which writes a fingerprint for next time.
     mediaRepository
       .findByIdOrNull(book.id)
       ?.takeIf {
@@ -112,9 +119,23 @@ class BookAnalyzer(
           it.mediaType == mediaType.type &&
           it.pages.isNotEmpty() &&
           it.pageCount == it.pages.size
-      }?.let {
-        logger.info { "Reusing cached media for book: $book (${it.pageCount} pages)" }
-        return it
+      }?.takeIf { cached ->
+        val fingerprint = mediaRepository.findExtensionByIdOrNull(book.id) as? MediaExtensionDivina
+        if (fingerprint == null) {
+          logger.info { "No file fingerprint for book: $book, re-analyzing" }
+          false
+        } else if (!fingerprint.matches(book)) {
+          logger.info {
+            "Book file changed since analysis (analyzed: ${fingerprint.bookFileLastModified}/${fingerprint.bookFileSize}, " +
+              "current: ${book.fileLastModified}/${book.fileSize}), re-analyzing: $book"
+          }
+          false
+        } else {
+          true
+        }
+      }?.let { cached ->
+        logger.info { "Reusing cached media for book: $book (${cached.pageCount} pages)" }
+        return cached
       }
 
     val entries =
@@ -154,7 +175,16 @@ class BookAnalyzer(
 
     val files = others.map { MediaFile(fileName = it.name, mediaType = it.mediaType, fileSize = it.fileSize) }
 
-    return Media(status = Media.Status.READY, pages = pages, pageCount = pages.size, files = files, comment = entriesErrorSummary)
+    return Media(
+      status = Media.Status.READY,
+      pages = pages,
+      pageCount = pages.size,
+      files = files,
+      comment = entriesErrorSummary,
+      // Record the fingerprint of the file we just analyzed, so the cache short-circuit can
+      // detect a replacement on the next scan.
+      extension = MediaExtensionDivina(bookFileLastModified = book.fileLastModified, bookFileSize = book.fileSize),
+    )
   }
 
   private fun analyzeEpub(

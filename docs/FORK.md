@@ -239,7 +239,7 @@ merge 上游时**必须逐行比对**：
 | `domain/service/BookLifecycle.kt` | 调用点 + 懒缩略图判断 |
 | `domain/service/LibraryContentLifecycle.kt` | 3 处调用点 |
 | `domain/service/ComicInfoProvider.kt` | 外部 xml 逻辑 |
-| `src/flyway/resources/db/migration/sqlite/` | 迁移编号冲突 |
+| `komga/src/flyway/resources/db/migration/sqlite/V20260924120000__sha1_relpath_hash.sql` | 迁移编号冲突 |
 
 ---
 

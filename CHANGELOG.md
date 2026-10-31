@@ -42,8 +42,9 @@
   三条已合入 master 的 `feat/*` 分支一并清理
 
 ## 部署
-- 库根：`/opt/clouddrive2/115open/content`（**不是** `.../comic`，那个路径不存在；
-  取 `content/` 而非 `content/wnacg/` 才能让相对路径与 LANraragi 一致）
+- 库根：`/opt/clouddrive2/115open/content/wnacg`（**不是** `.../comic`，那个路径不存在；
+  也不是 `content/`：Hasher 取库根的父目录作为哈希基准，只有填到 `wnacg` 层
+  相对路径才是 `wnacg/...`，与 LANraragi 一致）
 - 平台：Dell MX Linux，裸 jar，端口 25600
 - 与 LANraragi 挂载同一份数据，两边文件身份互通
 

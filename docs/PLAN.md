@@ -43,7 +43,8 @@
 
 ```
 旧：/opt/clouddrive2/115open/comic/        ← 已不存在
-新：/opt/clouddrive2/115open/content/      ← 现库根
+新：/opt/clouddrive2/115open/content/      ← 现漫画根
+    Komga 库根填 content/wnacg（哈希基准是库根父目录，只有填到 wnacg 层相对路径才是 wnacg/...）
      ├── wnacg/     (9月29日)
      ├── pika/      (10月2日，按 00-0f 十六进制分片)
      └── jmacg/     (8月22日)

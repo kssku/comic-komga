@@ -22,7 +22,8 @@ Komga 是一个漫画、日漫、BD、杂志和电子书媒体服务器。
 
 ## 使用场景
 
-- 库根：`/opt/clouddrive2/115open/comic`（115 网盘经 CloudDrive2 挂载）
+- 库根：`/opt/clouddrive2/115open/content/wnacg`（115 网盘经 CloudDrive2 挂载）。
+  必须填到 `wnacg` 这一层：哈希基准是**库根的父目录**，只有这样相对路径才是 `wnacg/...`
 - 部署：Dell MX Linux，裸 jar 运行，端口 25600
 - 与 LANraragi 挂载同一份数据，两边文件身份互通
 

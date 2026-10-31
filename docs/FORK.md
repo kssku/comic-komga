@@ -14,6 +14,7 @@
 | 节点 | Dell MX（hostname `mx`）|
 | 挂载 | `/opt/clouddrive2/115open`（CloudFS, fuse）|
 | 漫画根 | `/opt/clouddrive2/115open/content/` |
+| Komga 库根 | `/opt/clouddrive2/115open/content/wnacg/`（填到 wnacg 层，见 §1.1 与 Hasher 注释）|
 | 端口 | 25600 |
 
 ### 1.1 实际目录结构（2026-10-09 实测）

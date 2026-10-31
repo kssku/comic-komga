@@ -65,7 +65,7 @@ class Hasher {
    * Hash a book's path relative to [libraryRoot]'s PARENT directory.
    *
    * The parent directory is used deliberately: in this deployment the library root is
-   * `.../comic/wnacg/`, so the parent-relative path becomes `wnacg/<shard>/<file>.cbz` —
+   * `.../content/wnacg/`, so the parent-relative path becomes `wnacg/<shard>/<file>.cbz` —
    * which is exactly the string LANraragi hashes. Using the root itself would yield
    * `<shard>/<file>.cbz` and every hash would differ.
    *

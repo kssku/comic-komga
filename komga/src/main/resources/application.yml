@@ -25,6 +25,21 @@ komga:
   tasks-db:
     file: \${komga.config-dir}/tasks.sqlite
 
+  # comic-meta: external PostgreSQL metadata DB (read-only).
+  # MIGRATION: `db-path` (SQLite) is REMOVED. The PG schema is not flat:
+  #   source-id selects the TABLE PREFIX (jm / pica / wnacg; anything else is rejected)
+  #   and tags live on the work, reached through volume -> work -> work_tags -> tags.
+  # Leave `enabled: false` unless you really have this DB; lookups then return null
+  # and Komga behaves exactly as before. NEVER commit a real password here.
+  #
+  # comic-meta:
+  #   enabled: true
+  #   db-url: jdbc:postgresql://host.docker.internal:55432/comic_meta
+  #   db-user: comic
+  #   db-password: \${COMIC_META_DB_PASSWORD}
+  #   source-id: wnacg
+  #   retry-cooldown-ms: 60000
+
 spring:
   flyway:
     enabled: true

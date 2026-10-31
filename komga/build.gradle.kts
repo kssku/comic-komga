@@ -121,6 +121,9 @@ dependencies {
   implementation("com.github.ben-manes.caffeine:caffeine")
 
   implementation("org.xerial:sqlite-jdbc:${libs.versions.sqliteJdbc.get()}")
+  // FIX(comic-meta): ComicMetaRepository reads an external PostgreSQL metadata DB.
+  // Plain JDBC only (no jOOQ codegen); the driver is not needed at SQLite paths.
+  implementation("org.postgresql:postgresql:${libs.versions.postgresqlJdbc.get()}")
   jooqGenerator("org.xerial:sqlite-jdbc:${libs.versions.sqliteJdbc.get()}")
 
   // FIX(fork): upstream gated this processor on the release version ending in ".0.0",

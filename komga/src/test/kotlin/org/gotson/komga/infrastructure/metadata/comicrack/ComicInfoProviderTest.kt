@@ -37,7 +37,12 @@ class ComicInfoProviderTest {
       every { it.getFileContent(any(), "ComicInfo.xml") } returns ByteArray(0)
     }
   private val isbnValidator = ISBNValidator(true)
-  private val mockComicMetaRepository = mockk<ComicMetaRepository>()
+  private val mockComicMetaRepository =
+    mockk<ComicMetaRepository>().also {
+      // ComicMetaRepository is external-DB backed: null means "not available", which keeps the
+      // pre-existing test intent (embedded ComicInfo.xml is the only metadata source).
+      every { it.findBookMetadata(any()) } returns null
+    }
 
   private val comicInfoProvider = ComicInfoProvider(mockMapper, mockAnalyzer, isbnValidator, mockComicMetaRepository)
 
@@ -534,7 +539,10 @@ class ComicInfoProviderTest {
       return BookWithMedia(makeBook("book", url = bookFile.toUri().toURL()), media)
     }
 
-    private val realProvider = ComicInfoProvider(XmlMapper(), mockAnalyzer, isbnValidator, mockk<ComicMetaRepository>())
+    private val mockComicMetaRepository =
+      mockk<ComicMetaRepository>().also { every { it.findBookMetadata(any()) } returns null }
+
+    private val realProvider = ComicInfoProvider(XmlMapper(), mockAnalyzer, isbnValidator, mockComicMetaRepository)
 
     @Test
     fun `given external comic info and importExternalXml when getting series metadata then external file is used`() {

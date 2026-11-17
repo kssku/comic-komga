@@ -16,6 +16,7 @@ import org.gotson.komga.domain.service.LocalArtworkLifecycle
 import org.gotson.komga.domain.service.PageHashLifecycle
 import org.gotson.komga.domain.service.SeriesLifecycle
 import org.gotson.komga.domain.service.SeriesMetadataLifecycle
+import org.gotson.komga.infrastructure.configuration.KomgaProperties
 import org.gotson.komga.infrastructure.search.SearchIndexLifecycle
 import org.gotson.komga.interfaces.scheduler.METER_TASKS_EXECUTION
 import org.gotson.komga.interfaces.scheduler.METER_TASKS_FAILURE
@@ -44,6 +45,7 @@ class TaskHandler(
   private val searchIndexLifecycle: SearchIndexLifecycle,
   private val pageHashLifecycle: PageHashLifecycle,
   private val meterRegistry: MeterRegistry,
+  private val komgaProperties: KomgaProperties,
 ) {
   fun handleTask(task: Task) {
     logger.info { "Executing task: $task" }
@@ -53,7 +55,9 @@ class TaskHandler(
           is Task.ScanLibrary ->
             libraryRepository.findByIdOrNull(task.libraryId)?.let { library ->
               libraryContentLifecycle.scanRootFolder(library, task.scanDeep)
-              taskEmitter.analyzeUnknownAndOutdatedBooks(library)
+              if (!komgaProperties.analysis.onDemand) {
+                taskEmitter.analyzeUnknownAndOutdatedBooks(library)
+              }
               taskEmitter.repairExtensions(library, LOW_PRIORITY)
               taskEmitter.findBooksToConvert(library, LOWEST_PRIORITY)
               taskEmitter.findBooksWithMissingPageHash(library, LOWEST_PRIORITY)
@@ -84,9 +88,13 @@ class TaskHandler(
 
           is Task.AnalyzeBook ->
             bookRepository.findByIdOrNull(task.bookId)?.let { book ->
-              val actions = bookLifecycle.analyzeAndPersist(book)
-              if (actions.contains(BookAction.GENERATE_THUMBNAIL)) taskEmitter.generateBookThumbnail(book.id, priority = task.priority + 1)
-              if (actions.contains(BookAction.REFRESH_METADATA)) taskEmitter.refreshBookMetadata(book, priority = task.priority + 1)
+              if (komgaProperties.analysis.onDemand && !task.force) {
+                logger.debug { "On-demand analysis is enabled, skipping scheduled AnalyzeBook for book ${book.id}" }
+              } else {
+                val actions = bookLifecycle.analyzeAndPersist(book)
+                if (actions.contains(BookAction.GENERATE_THUMBNAIL)) taskEmitter.generateBookThumbnail(book.id, priority = task.priority + 1)
+                if (actions.contains(BookAction.REFRESH_METADATA)) taskEmitter.refreshBookMetadata(book, priority = task.priority + 1)
+              }
             } ?: logger.warn { "Cannot execute task $task: Book does not exist" }
 
           is Task.GenerateBookThumbnail ->

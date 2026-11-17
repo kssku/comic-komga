@@ -76,7 +76,8 @@ class BookConverter(
     if (failedConversions.contains(book.id))
       return logger.info { "Book conversion already failed before, skipping" }
 
-    fileSystemScanner.scanFile(book.path)?.let { scannedBook ->
+    val libraryRoot = libraryRepository.findById(book.libraryId).root
+    fileSystemScanner.scanFile(book.path, libraryRoot)?.let { scannedBook ->
       if (scannedBook.fileLastModified.notEquals(book.fileLastModified))
         return logger.info { "Book has changed on disk, skipping" }
     } ?: throw FileNotFoundException("File not found: ${book.path}")
@@ -114,7 +115,7 @@ class BookConverter(
     // perform checks on new file
     val convertedBook =
       fileSystemScanner
-        .scanFile(destinationPath)
+        .scanFile(destinationPath, libraryRoot)
         ?.copy(
           id = book.id,
           seriesId = book.seriesId,
@@ -202,12 +203,14 @@ class BookConverter(
     if (destinationPath.exists())
       throw FileAlreadyExistsException("Destination file already exists: $destinationPath")
 
+    val libraryRoot = libraryRepository.findById(book.libraryId).root
+
     logger.info { "Renaming ${book.path} to $destinationPath" }
     book.path.moveTo(destinationPath)
 
     val repairedBook =
       fileSystemScanner
-        .scanFile(destinationPath)
+        .scanFile(destinationPath, libraryRoot)
         ?.copy(
           id = book.id,
           seriesId = book.seriesId,

@@ -27,7 +27,8 @@ data class LibraryCreationDto(
   val convertToCbz: Boolean = false,
   val emptyTrashAfterScan: Boolean = false,
   val seriesCover: SeriesCoverDto = SeriesCoverDto.FIRST,
-  val hashFiles: Boolean = true,
+  // CUSTOM FORK: default OFF, matching Library.hashFiles. See the comment there.
+  val hashFiles: Boolean = false,
   val hashPages: Boolean = false,
   val hashKoreader: Boolean = false,
   val analyzeDimensions: Boolean = true,

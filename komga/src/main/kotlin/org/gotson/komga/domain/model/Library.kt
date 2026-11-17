@@ -31,7 +31,10 @@ data class Library(
   val convertToCbz: Boolean = false,
   val emptyTrashAfterScan: Boolean = false,
   val seriesCover: SeriesCover = SeriesCover.FIRST,
-  val hashFiles: Boolean = true,
+  // CUSTOM FORK: default OFF. fileHash in this fork is the path hash (BookLifecycle.hashAndPersist),
+  // never a content hash, so enabling this only queues one Task.HashBook per book after every scan
+  // - 150k no-op DB round-trips on the 115 library - without enabling any real duplicate detection.
+  val hashFiles: Boolean = false,
   val hashPages: Boolean = false,
   val hashKoreader: Boolean = false,
   val analyzeDimensions: Boolean = true,

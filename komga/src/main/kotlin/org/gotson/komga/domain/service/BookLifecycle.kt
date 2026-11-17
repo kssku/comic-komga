@@ -36,10 +36,15 @@ import org.gotson.komga.infrastructure.hash.Hasher
 import org.gotson.komga.infrastructure.hash.KoreaderHasher
 import org.gotson.komga.infrastructure.image.ImageConverter
 import org.gotson.komga.infrastructure.image.ImageType
+import org.gotson.komga.infrastructure.metadata.localartwork.LocalArtworkProvider
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.context.ApplicationEventPublisher
 import org.springframework.data.domain.Pageable
 import org.springframework.stereotype.Service
+import com.github.benmanes.caffeine.cache.Caffeine
+import java.util.concurrent.CompletableFuture
+import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.TimeUnit
 import org.springframework.transaction.support.TransactionTemplate
 import java.io.File
 import java.net.URLDecoder
@@ -74,10 +79,114 @@ class BookLifecycle(
   private val historicalEventRepository: HistoricalEventRepository,
   private val komgaSettingsProvider: KomgaSettingsProvider,
   private val komgaProperties: KomgaProperties,
+  private val localArtworkProvider: LocalArtworkProvider,
   @Qualifier("pdfImageType")
   private val pdfImageType: ImageType,
 ) {
   private val resizeTargetFormat = ImageType.JPEG
+
+  // CUSTOM FORK: single-flight + negative cache for on-demand (lazy) thumbnail generation.
+  // On a remote mount (CloudDrive2/115) opening an archive to extract a cover is a
+  // multi-second I/O. A grid of covers fires N concurrent requests for the same
+  // bookId before any of them persists a thumbnail, so every one of them pays the
+  // full cost. In-flight requests now share one generation, and a recent failure is
+  // remembered briefly so a broken book is not retried on every scroll.
+  private val inflightThumbnailGenerations = ConcurrentHashMap<String, CompletableFuture<ByteArray?>>()
+
+  private val thumbnailFailureCache =
+    Caffeine
+      .newBuilder()
+      .maximumSize(8192)
+      .expireAfterWrite(60, TimeUnit.SECONDS)
+      .build<String, Long>()
+
+  // CUSTOM FORK: single-flight + negative cache for on-demand analysis, mirroring the
+  // thumbnail path above. Opening one book fires several requests (pages list, then
+  // page images) before any of them persists MEDIA, and each analysis opens the whole
+  // archive on a remote mount. Concurrent callers share one run; a recent failure is
+  // remembered briefly so a broken book is not re-read on every request.
+  private val inflightAnalyses = ConcurrentHashMap<String, CompletableFuture<Boolean>>()
+
+  private val analysisFailureCache =
+    Caffeine
+      .newBuilder()
+      .maximumSize(8192)
+      .expireAfterWrite(60, TimeUnit.SECONDS)
+      .build<String, Long>()
+
+  /**
+   * CUSTOM FORK: analyze one book on demand, for the lazy (zero-I/O) scan path.
+   *
+   * A scan in this fork never analyzes a book, so its MEDIA row stays UNKNOWN and the
+   * page list is not available. The first time a client actually opens the book we
+   * analyze it once here, persist MEDIA + MEDIA_PAGE, and every later request is served
+   * from the database without touching the archive.
+   *
+   * Returns true when the book ends up [Media.Status.READY].
+   */
+  fun analyzeOnDemand(book: Book): Boolean {
+    if (!komgaProperties.analysis.onDemand) return false
+
+    // Already analyzed and usable: nothing to do, no I/O.
+    mediaRepository.findByIdOrNull(book.id)?.let { media ->
+      if (media.status == Media.Status.READY && media.pages.isNotEmpty()) return true
+      // OUTDATED / ERROR / UNSUPPORTED are decided states; do not hammer the archive.
+      if (media.status == Media.Status.UNSUPPORTED) return false
+    }
+
+    if (analysisFailureCache.getIfPresent(book.id) != null) {
+      logger.debug { "On-demand analysis recently failed for book ${book.id}, skipping retry" }
+      return false
+    }
+
+    // Single-flight: the claim is made with putIfAbsent, NOT computeIfAbsent, because the
+    // mapping function of computeIfAbsent runs under the ConcurrentHashMap bucket lock and
+    // the work here is a multi-second archive read on a remote mount.
+    val mine = CompletableFuture<Boolean>()
+    val existing = inflightAnalyses.putIfAbsent(book.id, mine)
+    if (existing == null) {
+      try {
+        val ok = tryAnalyzeAndPersist(book)
+        if (!ok) analysisFailureCache.put(book.id, System.currentTimeMillis())
+        mine.complete(ok)
+      } catch (e: Throwable) {
+        analysisFailureCache.put(book.id, System.currentTimeMillis())
+        mine.completeExceptionally(e)
+      } finally {
+        // Only drop OUR entry: a newer request may have installed a fresh future.
+        inflightAnalyses.remove(book.id, mine)
+      }
+    }
+
+    val future = existing ?: mine
+    return try {
+      future.get(5, TimeUnit.MINUTES)
+    } catch (e: Exception) {
+      logger.warn(e) { "On-demand analysis failed for book ${book.id}" }
+      false
+    }
+  }
+
+  private fun tryAnalyzeAndPersist(book: Book): Boolean {
+    logger.info { "On-demand analysis for book: $book" }
+    // Dimensions are deliberately skipped: the page-list DTO tolerates null width/height,
+    // and decoding every page on a remote mount is exactly the cost being avoided.
+    val media = bookAnalyzer.analyze(book, analyzeDimensions = false)
+
+    transactionTemplate.executeWithoutResult {
+      mediaRepository.update(media)
+    }
+
+    eventPublisher.publishEvent(DomainEvent.BookUpdated(book))
+
+    return if (media.status == Media.Status.READY) {
+      logger.info { "On-demand analysis done for book: $book (${media.pageCount} pages)" }
+      true
+    } else {
+      logger.warn { "On-demand analysis failed for book: $book (${media.status} / ${media.comment})" }
+      false
+    }
+  }
 
   fun analyzeAndPersist(book: Book): Set<BookAction> {
     logger.info { "Analyze and persist book: $book" }
@@ -220,15 +329,32 @@ class BookLifecycle(
     eventPublisher.publishEvent(DomainEvent.ThumbnailBookDeleted(thumbnail))
   }
 
+  /**
+   * CUSTOM FORK: request-path thumbnail lookup that NEVER touches the library mount.
+   *
+   * On CloudDrive2/115 every stat against book.path is a remote round-trip, and the
+   * original implementation stat'ed the selected thumbnail (ThumbnailBook.exists())
+   * and then fell into thumbnailsHouseKeeping(), which stat'ed again. With
+   * thumbnail.generate = false and an empty THUMBNAIL_BOOK table, that meant one
+   * unconditional FUSE stat per cover request, hammering the mount from every Tomcat
+   * thread. Order is now:
+   *
+   *  1. selected row in THUMBNAIL_BOOK, returned as-is with NO exists() probe;
+   *  2. bookId-sharded cover under artworkMirrorRoot (a LOCAL host directory,
+   *     see LocalArtworkProvider.findMirroredBookThumbnail);
+   *  3. null, letting the client render its placeholder.
+   *
+   * thumbnailsHouseKeeping() is deliberately NOT called here: its per-row exists()
+   * belongs to the low-frequency write paths (add/delete), not to every GET.
+   */
   fun getThumbnail(bookId: String): ThumbnailBook? {
-    val selected = thumbnailBookRepository.findSelectedByBookIdOrNull(bookId)
+    thumbnailBookRepository.findSelectedByBookIdOrNull(bookId)?.let { return it }
 
-    if (selected == null || !selected.exists()) {
-      thumbnailsHouseKeeping(bookId)
-      return thumbnailBookRepository.findSelectedByBookIdOrNull(bookId)
-    }
+    // CUSTOM FORK: sharded mirror lookup. I/O is confined to artworkMirrorRoot, which
+    // lives outside the FUSE content subtree, so this costs no remote traffic.
+    localArtworkProvider.findMirroredBookThumbnail(bookId)?.let { return it }
 
-    return selected
+    return null
   }
 
   fun getThumbnailBytes(
@@ -240,13 +366,87 @@ class BookLifecycle(
     // CUSTOM FORK: in lazy thumbnail mode, thumbnails are not generated during scan.
     // Generate on demand the first time a missing thumbnail is requested.
     if (komgaProperties.thumbnailMode == KomgaProperties.ThumbnailMode.LAZY) {
-      val book = bookRepository.findByIdOrNull(bookId) ?: return null
-      logger.info { "Thumbnail missing for book $bookId, generating on demand (lazy mode)" }
-      generateThumbnailAndPersist(book)
-      return readThumbnailBytes(bookId, resizeTo)
+      // CUSTOM FORK: generation is disabled by default, so a missing thumbnail never
+      // opens the archive. On a metered/remote mount (CloudDrive2/115) browsing covers
+      // must not cost traffic. Reading the book itself is unaffected.
+      if (!komgaProperties.thumbnail.generate) {
+        logger.debug { "Thumbnail generation is disabled, not generating thumbnail for book $bookId" }
+        return null
+      }
+
+      if (thumbnailFailureCache.getIfPresent(bookId) != null) {
+        logger.debug { "Thumbnail generation recently failed for book $bookId, skipping retry" }
+        return null
+      }
+
+      // Single-flight: concurrent requests for the same book share one generation.
+      //
+      // The claim is made with putIfAbsent, NOT computeIfAbsent: the mapping function of
+      // computeIfAbsent runs while holding the ConcurrentHashMap bucket lock, and the work
+      // here is a multi-second archive read on a remote mount. Holding the bucket lock
+      // would serialize unrelated books that happen to share a bucket. The winner of
+      // putIfAbsent does the I/O outside any lock; losers just await the same future.
+      // The future carries the RAW generated bytes, not a resized result: callers with
+      // different resizeTo values share one generation and resize their own copy.
+      val mine = CompletableFuture<ByteArray?>()
+      val existing = inflightThumbnailGenerations.putIfAbsent(bookId, mine)
+      if (existing == null) {
+        try {
+          val generated = tryGenerateThumbnail(bookId)
+          if (generated == null) thumbnailFailureCache.put(bookId, System.currentTimeMillis())
+          mine.complete(generated)
+        } catch (e: Throwable) {
+          thumbnailFailureCache.put(bookId, System.currentTimeMillis())
+          mine.completeExceptionally(e)
+        } finally {
+          // Only drop OUR entry. If a waiter timed out and a newer request installed a
+          // fresh future, an unconditional remove would evict that newer entry and let a
+          // third request start a second full generation.
+          inflightThumbnailGenerations.remove(bookId, mine)
+        }
+      }
+
+      val future = existing ?: mine
+      val raw =
+        try {
+          future.get(5, TimeUnit.MINUTES)
+        } catch (e: Exception) {
+          logger.warn(e) { "On-demand thumbnail generation failed for book $bookId" }
+          null
+        } ?: return null
+
+      if (resizeTo == null) return TypedBytes(raw, resizeTargetFormat.mediaType)
+
+      return try {
+        TypedBytes(
+          imageConverter.resizeImageToByteArray(raw, resizeTargetFormat, resizeTo),
+          resizeTargetFormat.mediaType,
+        )
+      } catch (e: Exception) {
+        logger.error(e) { "Resize on-demand thumbnail of book $bookId to $resizeTo: failed" }
+        null
+      }
     }
 
     return null
+  }
+
+  /**
+   * CUSTOM FORK: run the actual on-demand generation and return the bytes, or null.
+   * Kept separate so the single-flight wrapper stays readable.
+   */
+  private fun tryGenerateThumbnail(bookId: String): ByteArray? {
+    val book = bookRepository.findByIdOrNull(bookId) ?: return null
+    logger.info { "Thumbnail missing for book $bookId, generating on demand (lazy mode)" }
+    generateThumbnailAndPersist(book)
+    // Read back the raw stored bytes; resizing happens per caller, outside the shared future.
+    return getThumbnail(bookId)?.let { thumbnail ->
+      when {
+        thumbnail.thumbnail != null -> thumbnail.thumbnail
+        thumbnail.url != null -> File(thumbnail.url.toURI()).readBytes()
+        else -> null
+      }
+    }
   }
 
   private fun readThumbnailBytes(

@@ -1,11 +1,14 @@
 package org.gotson.komga.domain.service
 
+import com.github.f4b6a3.tsid.TsidCreator
 import io.github.oshai.kotlinlogging.KotlinLogging
 import org.gotson.komga.domain.model.Book
 import org.gotson.komga.domain.model.DirectoryNotFoundException
 import org.gotson.komga.domain.model.ScanResult
 import org.gotson.komga.domain.model.Series
 import org.gotson.komga.domain.model.Sidecar
+import org.gotson.komga.infrastructure.configuration.KomgaProperties
+import org.gotson.komga.infrastructure.hash.Hasher
 import org.gotson.komga.infrastructure.sidecar.SidecarBookConsumer
 import org.gotson.komga.infrastructure.sidecar.SidecarSeriesConsumer
 import org.springframework.stereotype.Service
@@ -35,6 +38,8 @@ private val logger = KotlinLogging.logger {}
 class FileSystemScanner(
   private val sidecarBookConsumers: List<SidecarBookConsumer>,
   private val sidecarSeriesConsumers: List<SidecarSeriesConsumer>,
+  private val hasher: Hasher,
+  private val komgaProperties: KomgaProperties,
 ) {
   private data class TempSidecar(
     val name: String,
@@ -65,13 +70,30 @@ class FileSystemScanner(
     logger.info { "Excluded directory patterns: $directoryExclusions" }
     logger.info { "Force directory modified time: $forceDirectoryModifiedTime" }
 
+    // CUSTOM FORK: book IDs are SHA1 of the path relative to the library root's
+    // PARENT, matching LANraragi. The library root is needed at book-construction
+    // time, so it is captured here and threaded down to pathToBook().
+    val libraryRootUrl = root.toUri().toURL()
+
+    // CUSTOM FORK (LRR path mode): when enabled, a book's series is the <seriesId>
+    // segment of <seriesDir>/<bucket>/<seriesId>/<volume>, not its parent directory.
+    // Books accumulate here across buckets and are emitted after the walk.
+    val lrrPathMode = komgaProperties.lrrPathMode
+    val lrrEnabled = lrrPathMode.enabled
+    val lrrBooks = linkedMapOf<String, MutableList<Book>>()
+    val lrrSeriesByKey = linkedMapOf<String, Series>()
+    // CUSTOM FORK (LRR path mode): archives under <oneshotDir> are single-volume works.
+    // LRR keeps them strictly apart from series; Komga already models that as a one-book
+    // series with Series.oneshot = true, which the UI marks, filters and redirects on.
+    val lrrOneshotBooks = mutableListOf<Book>()
+
     if (!(Files.isDirectory(root) && Files.isReadable(root)))
       throw DirectoryNotFoundException("Folder is not accessible: $root", "ERR_1016")
 
     val scannedSeries = mutableMapOf<Series, List<Book>>()
     val scannedSidecars = mutableListOf<Sidecar>()
 
-    measureTime {
+    val scanDuration = measureTime {
       // path is the series directory
       val pathToSeries = mutableMapOf<Path, Series>()
       val pathToSeriesSidecars = mutableMapOf<Path, MutableList<Sidecar>>()
@@ -115,9 +137,46 @@ class FileSystemScanner(
               if (scanForExtensions.contains(file.extension.lowercase()) &&
                 !file.name.startsWith(".")
               ) {
-                val book = pathToBook(file, attrs)
-                file.parent.let { key ->
-                  pathToBooks.merge(key, mutableListOf(book)) { prev, one -> prev.union(one).toMutableList() }
+                val book = pathToBook(file, attrs, libraryRootUrl)
+                val lrrSeries =
+                  if (lrrEnabled) lrrSeriesFor(file, root, lrrPathMode.seriesDir, lrrPathMode.oneshotDir) else null
+                when {
+                  // CUSTOM FORK (LRR path mode): a book under <oneshotDir> is its own
+                  // single-volume work, never a volume of a series. It is emitted below as
+                  // a one-book series with oneshot = true, which is what the UI keys on.
+                  lrrEnabled && lrrIsOneshotFile(file, root, lrrPathMode.oneshotDir) -> {
+                    lrrOneshotBooks.add(book.copy(oneshot = true))
+                  }
+
+                  lrrSeries != null -> {
+                    // CUSTOM FORK (LRR path mode): collect volumes of one <seriesId> across
+                    // bucket directories, numbered from the archive name so they sort by
+                    // volume rather than by ingest order.
+                    val (seriesId, seriesDir) = lrrSeries
+                    val numberedBook = book.copy(number = parseVolumeNumber(file.nameWithoutExtension))
+                    lrrBooks.getOrPut(seriesId) { mutableListOf() }.add(numberedBook)
+                    // CUSTOM FORK (LRR path mode): the series URL is its identity (Komga
+                    // matches scanned series by URL). Files arrive in walk order, which on a
+                    // FUSE mount is not deterministic, so always keep the lexicographically
+                    // smallest bucket directory instead of the first one seen - otherwise a
+                    // rescan creates a second series with the same name, leaving the old one
+                    // without books.
+                    val candidate =
+                      Series(
+                        name = seriesId,
+                        url = seriesDir.toUri().toURL(),
+                        fileLastModified = attrs.getUpdatedTime(),
+                      )
+                    lrrSeriesByKey.merge(seriesId, candidate) { current, _ ->
+                      if (current.url.toString() <= candidate.url.toString()) current else candidate
+                    }
+                  }
+
+                  else -> {
+                    file.parent.let { key ->
+                      pathToBooks.merge(key, mutableListOf(book)) { prev, one -> prev.union(one).toMutableList() }
+                    }
+                  }
                 }
               }
 
@@ -201,18 +260,42 @@ class FileSystemScanner(
           }
         },
       )
-    }.also {
-      val countOfBooks = scannedSeries.values.sumOf { it.size }
-      logger.info { "Scanned ${scannedSeries.size} series, $countOfBooks books, and ${scannedSidecars.size} sidecars in $it" }
     }
+
+    // CUSTOM FORK (LRR path mode): emit the cross-bucket series collected above.
+    lrrBooks.forEach { (seriesId, books) ->
+      scannedSeries[lrrSeriesByKey.getValue(seriesId)] = books.sortedWith(compareBy<Book> { it.number }.thenBy { it.name })
+    }
+
+    // CUSTOM FORK (LRR path mode): every book under <oneshotDir> becomes its own series.
+    // Url = the book's url and a single book are the same shape upstream uses for oneshots,
+    // so covers, reading and the series->book redirect all behave as before.
+    lrrOneshotBooks.forEach { book ->
+      scannedSeries[
+        Series(
+          name = book.name,
+          url = book.url,
+          fileLastModified = book.fileLastModified,
+          oneshot = true,
+        ),
+      ] = listOf(book)
+    }
+
+    // CUSTOM FORK: log after the LRR series have been flushed in, so the counts match what
+    // was actually persisted (the walk alone knows nothing about cross-bucket series).
+    val countOfBooks = scannedSeries.values.sumOf { it.size }
+    logger.info { "Scanned ${scannedSeries.size} series, $countOfBooks books, and ${scannedSidecars.size} sidecars in $scanDuration" }
 
     return ScanResult(scannedSeries, scannedSidecars)
   }
 
-  fun scanFile(path: Path): Book? {
+  fun scanFile(
+    path: Path,
+    libraryRoot: URL? = null,
+  ): Book? {
     if (!path.exists()) return null
 
-    return pathToBook(path, path.readAttributes())
+    return pathToBook(path, path.readAttributes(), libraryRoot)
   }
 
   fun scanBookSidecars(path: Path): List<Sidecar> {
@@ -231,14 +314,103 @@ class FileSystemScanner(
   private fun pathToBook(
     path: Path,
     attrs: BasicFileAttributes,
+    libraryRoot: URL? = null,
   ): Book =
     Book(
       name = path.nameWithoutExtension,
       url = path.toUri().toURL(),
       fileLastModified = attrs.getUpdatedTime(),
       fileSize = attrs.size(),
+      id = computeBookId(path, libraryRoot),
     )
+
+  /**
+   * CUSTOM FORK: book identity is SHA1 of the path relative to the library root's
+   * PARENT, byte-identical to LANraragi's `compute_id`, so the two systems share
+   * one ID space and one cover pool.
+   *
+   * NOTE: series IDs are still TSIDs (`Series` in visitPreVisitDirectory passes no
+   * `id`). Only book IDs were migrated to path hashes; series identity is unchanged.
+   *
+   * FALLBACK: when the library root is unknown (e.g. scanFile() for a book that is
+   * not being scanned through a library scan) or the hash cannot be computed, the
+   * TSID default is used instead of failing the scan. Ingesting a book must never
+   * break because the hash was unavailable.
+   */
+  private fun computeBookId(
+    path: Path,
+    libraryRoot: URL?,
+  ): String =
+    try {
+      if (libraryRoot == null) {
+        TsidCreator.getTsid256().toString()
+      } else {
+        hasher.computePathHash(path, libraryRoot)
+      }
+    } catch (e: Exception) {
+      logger.warn(e) { "Failed to compute path hash for $path (root: $libraryRoot), falling back to TSID" }
+      TsidCreator.getTsid256().toString()
+    }
+
+  /**
+   * CUSTOM FORK (LRR path mode): resolve <seriesDir>/<bucket>/<seriesId>/<volume>
+   * from a book path. Returns null when the path does not follow that layout, lives
+   * under <oneshotDir>, or the relative path cannot be computed.
+   */
+  private fun lrrSeriesFor(
+    file: Path,
+    root: Path,
+    seriesDir: String,
+    oneshotDir: String,
+  ): Pair<String, Path>? {
+    if (seriesDir.isBlank()) return null
+
+    val segments =
+      try {
+        root.relativize(file).map { it.toString() }
+      } catch (_: IllegalArgumentException) {
+        return null
+      }
+    if (segments.isEmpty()) return null
+
+    val seriesIndex = segments.lastIndexOf(seriesDir)
+    // Layout is exactly <seriesDir>/<bucket>/<seriesId>/<file>: two segments between
+    // <seriesDir> and the archive, deeper paths are deliberately not aggregated.
+    if (seriesIndex < 0 || seriesIndex + 3 != segments.lastIndex) return null
+    if (oneshotDir.isNotBlank() && segments.take(seriesIndex + 1).any { it == oneshotDir }) return null
+
+    val seriesId = segments[seriesIndex + 2]
+    if (seriesId.isBlank()) return null
+
+    val seriesDirectory = segments.take(seriesIndex + 3).fold(root) { acc, segment -> acc.resolve(segment) }
+    return seriesId to seriesDirectory
+  }
+
+  /**
+   * CUSTOM FORK (LRR path mode): true when the archive lives under <oneshotDir>, i.e.
+   * <root>/<oneshotDir>/<bucket>/<file>. Those are single-volume works by convention and
+   * must never be merged into a series, nor become one giant "bucket" series.
+   */
+  private fun lrrIsOneshotFile(
+    file: Path,
+    root: Path,
+    oneshotDir: String,
+  ): Boolean {
+    if (oneshotDir.isBlank()) return false
+    val segments =
+      try {
+        root.relativize(file).map { it.toString() }
+      } catch (_: IllegalArgumentException) {
+        return false
+      }
+    return segments.dropLast(1).any { it == oneshotDir }
+  }
+
+  /** CUSTOM FORK (LRR path mode): volume number = the last integer in the archive name. */
+  private fun parseVolumeNumber(baseName: String): Int = VOLUME_NUMBER_PATTERN.findAll(baseName).lastOrNull()?.value?.toIntOrNull() ?: 0
 }
+
+private val VOLUME_NUMBER_PATTERN = Regex("""\d+""")
 
 fun BasicFileAttributes.getUpdatedTime(): LocalDateTime = maxOf(creationTime(), lastModifiedTime()).toLocalDateTime()
 

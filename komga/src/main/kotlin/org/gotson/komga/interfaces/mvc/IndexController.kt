@@ -11,6 +11,9 @@ class IndexController(
 ) {
   private val baseUrl: String = "${servletContext.contextPath}/"
 
+  // CUSTOM FORK: '/' must stay the LEGACY UI: it is the only bundle that ships the reader
+  // (the new UI has no /book/{id}/read route), and the reader links next-ui opens point here.
+  // The new UI remains at /next.
   @GetMapping("/")
   fun index(model: Model): String {
     model.addAttribute("baseUrl", baseUrl)

@@ -23,6 +23,7 @@ import org.gotson.komga.domain.model.makeBook
 import org.gotson.komga.domain.model.makeBookPage
 import org.gotson.komga.domain.model.makeLibrary
 import org.gotson.komga.domain.model.makeSeries
+import org.gotson.komga.infrastructure.configuration.KomgaProperties
 import org.gotson.komga.domain.persistence.BookRepository
 import org.gotson.komga.domain.persistence.KomgaUserRepository
 import org.gotson.komga.domain.persistence.LibraryRepository
@@ -54,6 +55,7 @@ class BookLifecycleTest(
   @Autowired private val mediaRepository: MediaRepository,
   @Autowired private val userRepository: KomgaUserRepository,
   @Autowired private val thumbnailBookRepository: ThumbnailBookRepository,
+  @Autowired private val komgaProperties: KomgaProperties,
 ) {
   @SpykBean
   private lateinit var bookLifecycle: BookLifecycle
@@ -311,17 +313,25 @@ class BookLifecycleTest(
         bookId = book.id,
       )
 
-    // when
-    val bytes = bookLifecycle.getThumbnailBytes(book.id)
+    // CUSTOM FORK: archive reads are disabled by default (thumbnail.generate = false), so
+    // lazy generation only happens when explicitly enabled. This test covers that opt-in
+    // path, so turn it on for the duration and restore the default afterwards.
+    komgaProperties.thumbnail.generate = true
+    try {
+      // when
+      val bytes = bookLifecycle.getThumbnailBytes(book.id)
 
-    // then
-    assertThat(bytes).isNotNull
-    assertThat(bytes!!.bytes).isEqualTo(generatedBytes)
-    verify(exactly = 1) { mockAnalyzer.generateThumbnail(any()) }
+      // then
+      assertThat(bytes).isNotNull
+      assertThat(bytes!!.bytes).isEqualTo(generatedBytes)
+      verify(exactly = 1) { mockAnalyzer.generateThumbnail(any()) }
 
-    val thumbnail = thumbnailBookRepository.findSelectedByBookIdOrNull(book.id)
-    assertThat(thumbnail).isNotNull
-    assertThat(thumbnail!!.type).isEqualTo(ThumbnailBook.Type.GENERATED)
+      val thumbnail = thumbnailBookRepository.findSelectedByBookIdOrNull(book.id)
+      assertThat(thumbnail).isNotNull
+      assertThat(thumbnail!!.type).isEqualTo(ThumbnailBook.Type.GENERATED)
+    } finally {
+      komgaProperties.thumbnail.generate = false
+    }
   }
 
   @Nested

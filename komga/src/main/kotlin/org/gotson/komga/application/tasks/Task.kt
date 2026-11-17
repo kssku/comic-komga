@@ -67,10 +67,11 @@ sealed class Task(
     val bookId: String,
     priority: Int = DEFAULT_PRIORITY,
     groupId: String,
+    val force: Boolean = false,
   ) : Task(priority, groupId) {
     override val uniqueId = "ANALYZE_BOOK_$bookId"
 
-    override fun toString(): String = "AnalyzeBook(bookId='$bookId', priority='$priority')"
+    override fun toString(): String = "AnalyzeBook(bookId='$bookId', priority='$priority', force='$force')"
   }
 
   class GenerateBookThumbnail(

@@ -10,6 +10,7 @@ import jakarta.servlet.http.HttpServletRequest
 import jakarta.validation.Valid
 import org.gotson.komga.application.tasks.HIGHEST_PRIORITY
 import org.gotson.komga.application.tasks.HIGH_PRIORITY
+import org.gotson.komga.application.tasks.LOW_PRIORITY
 import org.gotson.komga.application.tasks.LOWEST_PRIORITY
 import org.gotson.komga.application.tasks.TaskEmitter
 import org.gotson.komga.domain.model.BookSearch
@@ -447,7 +448,23 @@ class BookController(
     bookRepository.findByIdOrNull(bookId)?.let { book ->
       contentRestrictionChecker.checkContentRestrictionBook(principal.user, book)
 
-      val media = mediaRepository.findById(book.id)
+      // CUSTOM FORK: lazy (zero-I/O) scans leave MEDIA at UNKNOWN. Opening a book is the
+      // moment to analyze it once, so the page list becomes available and every later
+      // request is served from the database instead of the archive.
+      val media = try {
+        mediaRepository.findById(book.id).let { current ->
+          if (current.status != Media.Status.UNKNOWN && current.status != Media.Status.OUTDATED) {
+            current
+          } else if (bookLifecycle.analyzeOnDemand(book)) {
+            mediaRepository.findById(book.id)
+          } else {
+            current
+          }
+        }
+      } catch (e: Exception) {
+        logger.warn(e) { "On-demand analysis failed for book ${book.id}" }
+        mediaRepository.findById(book.id)
+      }
       when (media.status) {
         Media.Status.UNKNOWN -> throw ResponseStatusException(HttpStatus.NOT_FOUND, "Book has not been analyzed yet")
         Media.Status.OUTDATED -> throw ResponseStatusException(
@@ -458,6 +475,16 @@ class BookController(
         Media.Status.ERROR -> throw ResponseStatusException(HttpStatus.NOT_FOUND, "Book analysis failed")
         Media.Status.UNSUPPORTED -> throw ResponseStatusException(HttpStatus.NOT_FOUND, "Book format is not supported")
         Media.Status.READY -> {
+          // CUSTOM FORK: opening a book is the natural moment to give it a cover.
+          // Scans never generate thumbnails (thumbnail.generate = false), so browsing the
+          // library costs no archive reads; a book the user actually opens gets one
+          // generated once in the background, and the UI refreshes it through the
+          // ThumbnailBookAdded SSE event. Cheap DB check, so repeated opens do not spawn
+          // a task once the cover exists.
+          if (thumbnailBookRepository.findSelectedByBookIdOrNull(book.id) == null) {
+            taskEmitter.generateBookThumbnail(book.id, priority = LOW_PRIORITY)
+          }
+
           val pages = if (media.profile == MediaProfile.PDF) bookAnalyzer.getPdfPagesDynamic(media) else media.pages
           pages.mapIndexed { index, bookPage ->
             PageDto(
@@ -631,7 +658,7 @@ class BookController(
     @PathVariable bookId: String,
   ) {
     bookRepository.findByIdOrNull(bookId)?.let { book ->
-      taskEmitter.analyzeBook(book, HIGH_PRIORITY)
+      taskEmitter.analyzeBook(book, HIGH_PRIORITY, force = true)
     } ?: throw ResponseStatusException(HttpStatus.NOT_FOUND)
   }
 

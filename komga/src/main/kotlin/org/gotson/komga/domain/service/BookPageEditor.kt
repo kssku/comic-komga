@@ -62,7 +62,7 @@ class BookPageEditor(
       return null
     }
 
-    fileSystemScanner.scanFile(book.path)?.let { scannedBook ->
+    fileSystemScanner.scanFile(book.path, libraryRepository.findById(book.libraryId).root)?.let { scannedBook ->
       if (scannedBook.fileLastModified.notEquals(book.fileLastModified)) {
         logger.info { "Book has changed on disk, skipping. Db: ${book.fileLastModified}. Scanned: ${scannedBook.fileLastModified}" }
         return null
@@ -153,7 +153,7 @@ class BookPageEditor(
     tempFile.moveTo(book.path, true)
     val newBook =
       fileSystemScanner
-        .scanFile(book.path)
+        .scanFile(book.path, libraryRepository.findById(book.libraryId).root)
         ?.copy(
           id = book.id,
           seriesId = book.seriesId,

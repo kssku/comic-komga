@@ -8,6 +8,7 @@ import org.apache.commons.io.FilenameUtils
 import org.assertj.core.api.Assertions.assertThat
 import org.gotson.komga.domain.model.Book
 import org.gotson.komga.domain.model.Series
+import org.gotson.komga.infrastructure.configuration.KomgaProperties
 import org.gotson.komga.infrastructure.image.ImageAnalyzer
 import org.gotson.komga.infrastructure.mediacontainer.ContentDetector
 import org.gotson.komga.infrastructure.mediacontainer.TikaConfiguration
@@ -15,6 +16,7 @@ import org.junit.jupiter.api.Test
 import java.nio.file.Files
 import java.nio.file.Path
 import java.time.LocalDateTime
+import java.util.Comparator
 import kotlin.io.path.extension
 
 class LocalArtworkProviderTest {
@@ -32,7 +34,9 @@ class LocalArtworkProviderTest {
       }
     }
 
-  private val localMediaAssetsProvider = LocalArtworkProvider(contentDetector, ImageAnalyzer())
+  private val komgaProperties = KomgaProperties()
+
+  private val localMediaAssetsProvider = LocalArtworkProvider(contentDetector, ImageAnalyzer(), komgaProperties)
 
   @Test
   fun `given book with sidecar files when getting thumbnails then return valid ones`() {
@@ -102,6 +106,81 @@ class LocalArtworkProviderTest {
       assertThat(thumbnails.map { FilenameUtils.getName(it.url.toString()) })
         .containsAll(thumbsFiles)
         .doesNotContainAnyElementsOf(invalidFiles)
+    }
+  }
+
+  @Test
+  fun `given mirror root configured when getting thumbnails then return sharded mirrored cover`() {
+    // The mirror tree is resolved on the HOST filesystem by design (it never lives on the
+    // library mount, which is a FUSE/CloudDrive2 mount in production), so this test cannot
+    // use Jimfs: a Jimfs path would resolve against the host fs and always miss.
+    val mirrorRoot = Files.createTempDirectory("komga-mirror-root")
+    val libraryRoot = Files.createTempDirectory("komga-library-root")
+    try {
+      // given
+      val bookDir = libraryRoot.resolve("oneshots/1-50000")
+      Files.createDirectories(bookDir)
+      val bookFile = Files.createFile(bookDir.resolve("10000.cbz"))
+
+      val book =
+        Book(
+          name = "10000.cbz",
+          url = bookFile.toUri().toURL(),
+          fileLastModified = LocalDateTime.now(),
+        )
+
+      // sharded layout: {root}/{bookId first 2 chars}/{bookId}.jpg
+      val shardDir = mirrorRoot.resolve(book.id.substring(0, 2))
+      Files.createDirectories(shardDir)
+      val cover = Files.createFile(shardDir.resolve("${book.id}.jpg"))
+
+      komgaProperties.artworkMirrorRoot = mirrorRoot.toString()
+
+      // when
+      val thumbnails = localMediaAssetsProvider.getBookThumbnails(book)
+
+      // then
+      assertThat(thumbnails).hasSize(1)
+      assertThat(thumbnails.first().url!!.path).isEqualTo(cover.toString())
+    } finally {
+      komgaProperties.artworkMirrorRoot = ""
+      deleteRecursively(mirrorRoot)
+      deleteRecursively(libraryRoot)
+    }
+  }
+
+  private fun deleteRecursively(path: Path) {
+    if (!Files.exists(path)) return
+    Files.walk(path).use { stream ->
+      stream.sorted(Comparator.reverseOrder()).forEach { Files.deleteIfExists(it) }
+    }
+  }
+
+  @Test
+  fun `given mirror root empty when getting thumbnails then fall back to sidecar`() {
+    Jimfs.newFileSystem(Configuration.unix()).use { fs ->
+      // given
+      val libraryRoot = fs.getPath("/library")
+      val bookDir = libraryRoot.resolve("oneshots/1-50000")
+      Files.createDirectories(bookDir)
+      Files.createFile(bookDir.resolve("10000.cbz"))
+      Files.createFile(bookDir.resolve("10000.jpg"))
+
+      komgaProperties.artworkMirrorRoot = ""
+
+      val book =
+        Book(
+          name = "10000.cbz",
+          url = bookDir.resolve("10000.cbz").toUri().toURL(),
+          fileLastModified = LocalDateTime.now(),
+        )
+
+      // when
+      val thumbnails = localMediaAssetsProvider.getBookThumbnails(book)
+
+      // then
+      assertThat(thumbnails).hasSize(1)
+      assertThat(thumbnails.first().url!!.path).endsWith("/library/oneshots/1-50000/10000.jpg")
     }
   }
 }

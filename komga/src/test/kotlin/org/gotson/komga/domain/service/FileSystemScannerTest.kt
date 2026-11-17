@@ -6,6 +6,8 @@ import org.apache.commons.io.FilenameUtils
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.catchThrowable
 import org.gotson.komga.domain.model.DirectoryNotFoundException
+import org.gotson.komga.infrastructure.configuration.KomgaProperties
+import org.gotson.komga.infrastructure.hash.Hasher
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.Arguments
@@ -15,7 +17,7 @@ import java.nio.file.Path
 import java.util.stream.Stream
 
 class FileSystemScannerTest {
-  private val scanner = FileSystemScanner(emptyList(), emptyList())
+  private val scanner = FileSystemScanner(emptyList(), emptyList(), Hasher(), KomgaProperties())
 
   @Test
   fun `given unavailable root directory when scanning then throw exception`() {
@@ -393,6 +395,71 @@ class FileSystemScannerTest {
       scan.forEach { (_, books) ->
         assertThat(books).hasSize(1)
       }
+    }
+  }
+
+  @Test
+  fun `given lrr path mode when scanning then series are aggregated across buckets and ordered by volume`() {
+    Jimfs.newFileSystem(Configuration.unix()).use { fs ->
+      // given: one series sharded across two bucket directories, plus a oneshot
+      val root = fs.getPath("/library")
+      val bucketA = root.resolve("series/1-50000/12345")
+      val bucketB = root.resolve("series/100001-150000/12345")
+      val oneshotDir = root.resolve("oneshots/1-50000")
+      Files.createDirectories(bucketA)
+      Files.createDirectories(bucketB)
+      Files.createDirectories(oneshotDir)
+      Files.createFile(bucketA.resolve("第03话.cbz"))
+      Files.createFile(bucketB.resolve("第01话.cbz"))
+      Files.createFile(oneshotDir.resolve("999.cbz"))
+
+      val properties = KomgaProperties()
+      properties.lrrPathMode.enabled = true
+      val lrrScanner = FileSystemScanner(emptyList(), emptyList(), Hasher(), properties)
+
+      // when
+      val scan = lrrScanner.scanRootFolder(root, oneshotsDir = "oneshots").series
+
+      // then: both volumes of 12345 collapse into ONE series, ordered by parsed number
+      val series = scan.keys.first { it.name == "12345" }
+      val books = scan.getValue(series)
+      assertThat(books).hasSize(2)
+      assertThat(books.map { it.number }).containsExactly(1, 3)
+      assertThat(books.map { it.name }).containsExactly("第01话", "第03话")
+
+      // series identity is its URL, so it must not depend on walk order: always the
+      // lexicographically smallest bucket directory
+      assertThat(series.url.path.trimEnd('/')).endsWith("series/1-50000/12345")
+
+      // and the oneshot stays its own one-book series
+      assertThat(scan.size).isEqualTo(2)
+      assertThat(scan.keys.count { it.oneshot }).isEqualTo(1)
+    }
+  }
+
+  @Test
+  fun `given lrr path mode when scanning oneshot directory then every book is its own oneshot series`() {
+    Jimfs.newFileSystem(Configuration.unix()).use { fs ->
+      // given: three single-volume works sharing one bucket directory
+      val root = fs.getPath("/library")
+      val bucket = root.resolve("oneshots/1-50000")
+      Files.createDirectories(bucket)
+      Files.createFile(bucket.resolve("111.cbz"))
+      Files.createFile(bucket.resolve("222.cbz"))
+      Files.createFile(bucket.resolve("333.cbz"))
+
+      val properties = KomgaProperties()
+      properties.lrrPathMode.enabled = true
+      val lrrScanner = FileSystemScanner(emptyList(), emptyList(), Hasher(), properties)
+
+      // when: no oneshotsDir argument is passed, LRR path mode alone must classify them
+      val scan = lrrScanner.scanRootFolder(root).series
+
+      // then: not one giant "bucket" series, but three oneshot series
+      assertThat(scan).hasSize(3)
+      assertThat(scan.keys).allMatch { it.oneshot }
+      assertThat(scan.values).allMatch { books -> books.size == 1 && books.first().oneshot }
+      assertThat(scan.keys.map { it.name }).containsExactlyInAnyOrder("111", "222", "333")
     }
   }
 

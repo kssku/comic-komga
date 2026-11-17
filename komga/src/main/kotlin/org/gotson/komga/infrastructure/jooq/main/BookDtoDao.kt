@@ -504,10 +504,10 @@ class BookDtoDao(
     MediaDto(
       status = status,
       mediaType = mediaType ?: "",
-      pagesCount = pageCount.toInt(),
+      pagesCount = pageCount?.toInt() ?: 0,
       comment = comment ?: "",
-      epubDivinaCompatible = epubDivinaCompatible,
-      epubIsKepub = epubIsKepub,
+      epubDivinaCompatible = epubDivinaCompatible ?: false,
+      epubIsKepub = epubIsKepub ?: false,
     )
 
   private fun BookMetadataRecord.toDto(

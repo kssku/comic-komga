@@ -20,7 +20,12 @@ class ZipExtractor(
   override fun mediaTypes(): List<String> = listOf(MediaType.ZIP.type)
 
   /**
-   * CUSTOM FORK: this implementation performs ZERO file reads per entry.
+   * CUSTOM FORK: every entry's metadata comes from the ZIP central directory alone.
+   *
+   * `setIgnoreLocalFileHeader(true)` is mandatory here, not an optimisation: without it the
+   * ZipFile constructor resolves each entry's local file header (a seek to `localHeaderOffset`
+   * plus a 30-byte read). On a mount that cannot seek cheaply that is one sparse random read
+   * per page, so a 200-page book still paid 200 transfers just to build the page list.
    *
    * Upstream opened every archive entry (`zip.getInputStream`) to sniff its magic bytes
    * and, when asked, to read the image header for its dimension. On the CloudDrive2/115
@@ -41,7 +46,7 @@ class ZipExtractor(
     path: Path,
     analyzeDimensions: Boolean,
   ): List<MediaContainerEntry> =
-    ZipFile.builder().setPath(path).use { zip ->
+    ZipFile.builder().setPath(path).setIgnoreLocalFileHeader(true).use { zip ->
       val entries = zip.entries.toList().filter { !it.isDirectory }
 
       // CUSTOM FORK: encryption is flagged in the central directory (bit 0 of the general

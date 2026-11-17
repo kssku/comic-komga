@@ -654,7 +654,7 @@ class SeriesController(
   fun seriesAnalyze(
     @PathVariable seriesId: String,
   ) {
-    taskEmitter.analyzeBook(bookRepository.findAllBySeriesId(seriesId), HIGH_PRIORITY)
+    taskEmitter.analyzeBook(bookRepository.findAllBySeriesId(seriesId), HIGH_PRIORITY, force = true)
   }
 
   @Operation(summary = "Refresh series metadata", tags = [OpenApiConfiguration.TagNames.SERIES])

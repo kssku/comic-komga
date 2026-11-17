@@ -148,16 +148,18 @@ class TaskEmitter(
   fun analyzeBook(
     book: Book,
     priority: Int = DEFAULT_PRIORITY,
+    force: Boolean = false,
   ) {
-    submitTask(Task.AnalyzeBook(book.id, priority, book.seriesId))
+    submitTask(Task.AnalyzeBook(book.id, priority, book.seriesId, force))
   }
 
   fun analyzeBook(
     books: Collection<Book>,
     priority: Int = DEFAULT_PRIORITY,
+    force: Boolean = false,
   ) {
     books
-      .map { Task.AnalyzeBook(it.id, priority, it.seriesId) }
+      .map { Task.AnalyzeBook(it.id, priority, it.seriesId, force) }
       .let { submitTasks(it) }
   }
 

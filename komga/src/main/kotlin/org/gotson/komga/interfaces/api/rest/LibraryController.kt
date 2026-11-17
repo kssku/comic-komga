@@ -252,7 +252,7 @@ class LibraryController(
           SearchContext.empty(),
           Pageable.unpaged(),
         ).content
-    taskEmitter.analyzeBook(books, HIGH_PRIORITY)
+    taskEmitter.analyzeBook(books, HIGH_PRIORITY, force = true)
   }
 
   @PostMapping("{libraryId}/metadata/refresh")

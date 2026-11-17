@@ -50,8 +50,84 @@ class KomgaProperties {
     AUTO,
   }
 
+  /**
+   * CUSTOM FORK: LANraragi-compatible series aggregation.
+   *
+   * Upstream (and this fork by default) treats "the directory a book sits in" as its
+   * series. That is wrong for a library laid out by the LANraragi ingestion tooling,
+   * where one series is sharded across bucket directories:
+   *
+   *   <seriesDir>/<bucket>/<seriesId>/<volume>.cbz
+   *
+   * With this mode enabled a book's series identity is <seriesId>, so volumes of one
+   * series are collected across buckets, and the book's number is parsed from the
+   * archive name so volumes sort by number instead of by ingest order.
+   *
+   * Disabled by default: enabling it changes series identity for an existing library,
+   * so a full rescan is required. Set via `komga.lrr-path-mode.enabled`
+   * (environment variable `KOMGA_LRR_PATH_MODE_ENABLED`).
+   */
+  var lrrPathMode: LrrPathModeProperties = LrrPathModeProperties()
+
+  class LrrPathModeProperties {
+    var enabled: Boolean = false
+
+    /** Directory whose child layout is <bucket>/<seriesId>/<volume>. */
+    var seriesDir: String = "series"
+
+    /** Directory whose archives stay standalone and are never aggregated. */
+    var oneshotDir: String = "oneshots"
+  }
+
+  /**
+   * CUSTOM FORK: on-demand thumbnail generation switch.
+   *
+   * With `generate = false` (default) a missing thumbnail is never produced by opening
+   * the archive on request: browsing covers reads nothing from the remote mount.
+   * Reading a book is unaffected.
+   *
+   * Set via `komga.thumbnail.generate` or environment variable `KOMGA_THUMBNAIL_GENERATE`.
+   */
+  var thumbnail = Thumbnail()
+
+  class Thumbnail {
+    var generate: Boolean = false
+  }
+
+  // CUSTOM FORK: analyze a book on first page-list access (KOMGA_ANALYSIS_ON_DEMAND).
+  var analysis = Analysis()
+
+  class Analysis {
+    var onDemand: Boolean = true
+
+    // CUSTOM FORK: in-memory page-list cache (BookPageMemoryCache). Set to false to
+    // bypass it entirely and fall back to reading the archive on every resolve.
+    var pageCacheEnabled: Boolean = true
+
+    // CUSTOM FORK: TTL of the page-list cache, applied as expireAfterAccess so a book
+    // that is being read is not evicted mid-read.
+    var pageCacheTtlMinutes: Int = 60
+
+    // CUSTOM FORK: cache capacity measured in PAGES, not entries, so a few large books
+    // cannot crowd out many small ones (or vice versa).
+    var pageCacheMaxTotalPages: Int = 100_000
+
+    // CUSTOM FORK: upper bound on a single page-list resolution (one archive read).
+    var pageResolveTimeoutSeconds: Int = 30
+  }
+
   @Positive
   var epubDivinaLetterCountThreshold: Int = 15
+
+  /**
+   * CUSTOM FORK: root of a mirror tree holding one cover image per book, sharded by the
+   * first two characters of the book id (matching lrr's `substr($id,0,2)`), which keeps
+   * every shard well under 115's per-directory file limit.
+   * Example: <root>/ab/abcdef123456.jpg for book id "abcdef123456".
+   * The tree lives on a LOCAL filesystem; only a handful of direct existence checks are
+   * made per book, never a directory listing. Empty (default) disables mirror lookups.
+   */
+  var artworkMirrorRoot: String = ""
 
   var oauth2AccountCreation: Boolean = false
 

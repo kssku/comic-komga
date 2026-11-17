@@ -52,10 +52,23 @@ push() {
     return 0
   fi
   : "${PUSH_DEST:?}"
-  log "push: ${ARCHIVE_DIR} -> ${PUSH_SSH}:${PUSH_DEST}"
-  # --no-same-permissions: the FUSE mount refuses chmod on directories, which would
-  # make tar exit non-zero even though every file was written.
-  tar -C "${ARCHIVE_DIR}" -cf - . | ssh ${PUSH_SSH} "tar --no-same-owner --no-same-permissions --no-overwrite-dir -xmf - -C ${PUSH_DEST}"
+  log "push: $ARCHIVE_DIR -> $PUSH_SSH:$PUSH_DEST (incremental)"
+  # 为什么用 rsync 而不是「tar 全量打包 | ssh tar 解包」：
+  #
+  # 1. tar 每次把整棵 archive 树重传一遍。实测 23 个 CBZ 用了 9.5 分钟，
+  #    而这一轮真正新增的只有 1 个文件。rsync --size-only 只传新增或大小
+  #    变化的文件，常态接近零传输。
+  # 2. tar 在 FUSE 上对已存在目录 chmod 会失败（Cannot change mode），
+  #    并以非零退出结束，把后面的 reconcile / scan 整段打断——文件其实
+  #    已经写进去了，属于「噪音导致误判失败」。
+  #
+  # --no-perms/--no-owner/--no-group：目标在云盘挂载上，权限由挂载决定，
+  # 同步源权限既无意义又会触发 chmod。
+  # --size-only：FUSE 的 mtime 不可靠，按大小判断足够（CBZ 重名即同物）。
+  # --no-times：FUSE 拒绝 utimes，rsync 保留 mtime 会以退出码 23 报"部分失败"。
+  rsync -rlD --size-only --no-times --no-perms --no-owner --no-group \
+    -e "ssh -o BatchMode=yes" \
+    "${ARCHIVE_DIR%/}/" "$PUSH_SSH:${PUSH_DEST%/}/"
 }
 
 reconcile() {

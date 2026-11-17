@@ -76,8 +76,27 @@ reconcile() {
     ${KOMGA_LIBRARY:+--komga-library "${KOMGA_LIBRARY}"}
 }
 
+# 抓一次 Mangrab 的进程内指标，追加成 jsonl 一行一个快照。
+# METRICS_FILE 为空则不采集（默认关闭，避免在意外目录建文件）。
+metrics() {
+  if [ -z "${METRICS_FILE:-}" ]; then
+    log "metrics: skipped (METRICS_FILE not set)"
+    return 0
+  fi
+  if curl -fsS -m 15 "${MANGRAB_URL}/api/download/stats" 2>/dev/null |
+    python3 -c 'import datetime,json,sys
+d = json.load(sys.stdin)
+print(json.dumps({"at": datetime.datetime.now().astimezone().isoformat(timespec="seconds"), "stats": d}, ensure_ascii=False))' >> "${METRICS_FILE}"; then
+    log "metrics: appended to ${METRICS_FILE}"
+  else
+    # 端点不可用不该让整圈失败——指标是观测，不是闭环的一环。
+    log "metrics: endpoint unavailable, skipped"
+  fi
+}
+
 case "${MODE}" in
-  all) dispatch; drain; push; reconcile ;;
+  all) dispatch; drain; metrics; push; reconcile ;;
+  metrics) metrics ;;
   dispatch) dispatch ;;
   drain) drain ;;
   push) push ;;

@@ -140,3 +140,70 @@ select state from wnacg_archive where comic_id = $1;
 2. 身份：`comic_id` = 文件名；任何新表/新接口都以它为主键
 3. 写入方唯一：元数据与归档状态只有 Mangrab（或同步器）写，Komga 只读
 4. 事件：下载完成 → 更新 comic_meta → POST Komga scan；三步失败要可重试、幂等
+
+## 7. 按 ID 下载的契约（Mangrab）
+
+这是目前唯一「面向脚本」的下载入口，也是接 comic_meta 的关键。
+
+### 请求
+
+```http
+POST /api/download/by-id
+Authorization: Bearer <JM_AUTH_TOKEN>
+Content-Type: application/json
+
+{ "comicId": "42409", "chapterId": "42409-1" }   // chapterId 可省略
+```
+
+- 只给 `comicId`：下载该漫画**所有未下载章节**
+- 同时给 `chapterId`：只下这一章（忽略整本逻辑）
+- `comicId` 就是站点 id，等于 comic_meta 的 `comic_id`、等于压缩包文件名
+
+### 响应
+
+```json
+{
+  "comicId": "42409",
+  "comicTitle": "...",
+  "createdChapters": ["..."],
+  "skippedChapters": [],
+  "alreadyRunningChapters": [],
+  "conflictedChapters": [],
+  "createdCount": 1
+}
+```
+
+### 前置条件
+
+- 站点已登录：`POST /api/login`，会话落在 `config.json`，账号密码落在 `credentials.json`（可自动重登）
+- 服务端用 `utils::get_comic(comic_id)` **现场向站点拉详情**，所以断网/未登录时这个接口会失败
+- 脚本鉴权：环境变量 `JM_AUTH_TOKEN`（未设置时启动随机生成并打印）；WebSocket 用 `?token=xxx`
+
+### 数据流
+
+```
+POST /download/by-id
+  → get_comic(comic_id)            拉取章节列表
+  → create_download_task × N       每章一个任务
+  → 下载图片到 {site}/{comic_id}/{order}/
+  → 自动导出 {order}.cbz（ComicInfo.xml + 图片），同目录留 元数据.json
+```
+
+## 8. 缺口与建议的调度器
+
+**缺口**：Mangrab 只提供「按 id 单本/单章下单」，没有「从 comic_meta 拉一批 pending 的 id 批量下单」的能力；也没有把结果写回 comic_meta。
+
+**最小调度器**（脚本级，不用改 Rust）：
+
+```text
+loop:
+  ids = SELECT comic_id FROM wnacg_archive WHERE state='pending' ORDER BY updated_at LIMIT 20
+  for id in ids:
+      POST /api/download/by-id {comicId: id}       # 失败则记日志，不阻塞
+  wait for tasks to drain (GET /api/tasks/stats)
+  reconcile --fix --komga-url ...                  # 回写 state=done + 通知 Komga
+  sleep N
+```
+
+这样三种数据就形成闭环：comic_meta 的 pending 队列 → Mangrab 下载 → 115 → 状态回写 → Komga 可见。
+唯一还缺的是「Mangrab 直接把 state 写成 done」的实时性（现在靠边车每轮补）。

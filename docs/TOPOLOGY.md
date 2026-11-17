@@ -119,3 +119,24 @@ Komga book.id = sha1("wnacg/oneshots/1-50000/1.cbz") = 4ee39cf0…
 5. Komga 扫描（零 I/O）+ 按 comic_id 查 comic_meta → 列表出现真标题
 6. 用户打开书 → 首次触发按需分析（读一次包）→ 封面生成 → 之后走缓存
 ```
+
+
+## 8. 2026-11-17 状态重写（以 115 实际文件为准）
+
+按“115 上真实存在的文件”重写 `wnacg_archive`：
+
+```text
+前：done 310,967 / pending 22,295 / failed 45,139 / permanent_failed 8,268
+后：done 150,721 / pending 182,541 / failed 45,139 / permanent_failed 8,268
+```
+
+规则：
+
+- 文件在 115 上 → `state=done`
+- 原来 done 但文件不在 → `state=pending`（进入待下载队列）
+- failed / permanent_failed 保持不动（历史尝试结果）
+
+脚本：`scripts/rebuild-archive-state.py`（默认 dry-run，`--apply` 才写）
+备份：应用前 `pg_dump -t wnacg_archive` 到 `/tmp/wnacg_archive_before_rebuild.sql`
+
+注意：本次只重写了 154 上的副本。生产 pgdata 尚未应用，部署时用同一脚本再跑一次即可（幂等）。

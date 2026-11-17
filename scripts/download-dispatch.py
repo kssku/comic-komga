@@ -64,8 +64,11 @@ def main():
             print("  would download: %s" % cid)
         return
 
-    if not args.mangrab_token:
-        sys.exit("missing --mangrab-token (or JM_AUTH_TOKEN)")
+    headers = {"Content-Type": "application/json"}
+    if args.mangrab_token:
+        headers["Authorization"] = "Bearer " + args.mangrab_token
+    else:
+        print("warning: no mangrab token, sending unauthenticated requests")
 
     ok = failed = 0
     for cid in ids:
@@ -73,8 +76,7 @@ def main():
         req = urllib.request.Request(
             args.mangrab_url.rstrip("/") + "/api/download/by-id",
             data=body, method="POST",
-            headers={"Content-Type": "application/json",
-                     "Authorization": "Bearer " + args.mangrab_token},
+            headers=headers,
         )
         try:
             with urllib.request.urlopen(req, timeout=120) as resp:

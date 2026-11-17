@@ -54,7 +54,14 @@ class TaskHandler(
         when (task) {
           is Task.ScanLibrary ->
             libraryRepository.findByIdOrNull(task.libraryId)?.let { library ->
-              libraryContentLifecycle.scanRootFolder(library, task.scanDeep)
+              // CUSTOM FORK: suspend live Lucene indexing during the scan, rebuild once after.
+              searchIndexLifecycle.suspendIndexing()
+              try {
+                libraryContentLifecycle.scanRootFolder(library, task.scanDeep)
+              } finally {
+                searchIndexLifecycle.resumeIndexing()
+              }
+              taskEmitter.rebuildIndex(LOW_PRIORITY)
               if (!komgaProperties.analysis.onDemand) {
                 taskEmitter.analyzeUnknownAndOutdatedBooks(library)
               }

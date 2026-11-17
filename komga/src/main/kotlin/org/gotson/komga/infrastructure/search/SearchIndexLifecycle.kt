@@ -82,8 +82,23 @@ class SearchIndexLifecycle(
     }
   }
 
+  // CUSTOM FORK: during a bulk scan every added series/book publishes an event, and indexing
+  // each one (plus loading its DTO) dominates the scan. Suspend live indexing and rebuild
+  // the index once when the scan finishes.
+  @Volatile
+  private var indexingSuspended = false
+
+  fun suspendIndexing() {
+    indexingSuspended = true
+  }
+
+  fun resumeIndexing() {
+    indexingSuspended = false
+  }
+
   @EventListener
   fun consumeEvents(event: DomainEvent) {
+    if (indexingSuspended) return
     when (event) {
       is DomainEvent.SeriesAdded -> seriesDtoRepository.findByIdOrNull(event.series.id, "unused")?.toDocument()?.let { addEntity(it) }
       is DomainEvent.SeriesUpdated -> seriesDtoRepository.findByIdOrNull(event.series.id, "unused")?.toDocument()?.let { updateEntity(LuceneEntity.Series, event.series.id, it) }

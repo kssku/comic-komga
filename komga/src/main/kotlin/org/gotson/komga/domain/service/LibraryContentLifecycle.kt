@@ -28,6 +28,7 @@ import org.gotson.komga.domain.persistence.SidecarRepository
 import org.gotson.komga.domain.persistence.ThumbnailBookRepository
 import org.gotson.komga.domain.persistence.ThumbnailSeriesRepository
 import org.gotson.komga.infrastructure.configuration.KomgaSettingsProvider
+import org.gotson.komga.infrastructure.configuration.KomgaProperties
 import org.gotson.komga.infrastructure.hash.Hasher
 import org.gotson.komga.language.notEquals
 import org.gotson.komga.language.toIndexedMap
@@ -38,6 +39,9 @@ import org.springframework.transaction.support.TransactionTemplate
 import java.nio.file.Paths
 import java.time.LocalDateTime
 import kotlin.time.measureTime
+
+// CUSTOM FORK: number of scanned series persisted per transaction (see scanRootFolder).
+private const val SCAN_PERSIST_CHUNK = 200
 
 private val logger = KotlinLogging.logger {}
 
@@ -56,6 +60,7 @@ class LibraryContentLifecycle(
   private val komgaSettingsProvider: KomgaSettingsProvider,
   private val taskEmitter: TaskEmitter,
   private val transactionTemplate: TransactionTemplate,
+  private val komgaProperties: KomgaProperties,
   private val hasher: Hasher,
   private val bookMetadataRepository: BookMetadataRepository,
   private val seriesMetadataRepository: SeriesMetadataRepository,
@@ -140,26 +145,40 @@ class LibraryContentLifecycle(
       // this can be used to detect changed series even if their file modified date did not change, for example because of NFS/SMB cache
       val seriesUrlWithDeletedBooks = seriesToSortAndRefresh.map { it.url }
 
-      // CUSTOM FORK: the per-series lookup below used to be one query each, and SERIES has no
-      // index on URL, so every lookup scanned the whole library. With one series per book in
-      // LRR path mode (one-shot archives) that is O(n^2): a 26k-book scan slowed from ~17 to
-      // ~0 series/s. One query for the whole library and a map lookup fixes the scaling.
-      val existingSeriesByUrl =
-        seriesRepository
-          .findAllByLibraryId(library.id)
-          .filter { it.deletedDate == null }
-          .associateBy { it.url }
+      // CUSTOM FORK: persist in chunks inside ONE transaction per chunk. Each scanned series used
+      // to open its own transaction (createSeries commits, addBooks commits), so a 26k one-shot
+      // library paid ~26k commits - the dominant cost once the O(n^2) lookup was gone.
+      // CUSTOM FORK: per-series metadata refresh opens the archive (ComicInfo provider) once
+      // per book. With one series per one-shot archive that is 150k archive reads on a
+      // remote mount, which defeats the zero-IO scan. One-shot series keep the metadata
+      // created at insert time (title = file name); refresh can be run explicitly.
+      val skipMetadataRefreshIds = mutableSetOf<String>()
 
-      scannedSeries.forEach { (newSeries, newBooks) ->
-        val existingSeries = existingSeriesByUrl[newSeries.url]
+      // CUSTOM FORK: soft-deleted series used to be loaded (with all their books) once per
+      // created series, i.e. a full scan of every deleted row for each of the 150k new
+      // one-shot series. Load them once per scan instead and consume the list as matches
+      // are restored.
+      val deletedSeriesCandidates = loadDeletedSeriesCandidates()
 
-        // if series does not exist, save it
+      scannedSeries.entries
+        .map { it.key to it.value }
+        .chunked(SCAN_PERSIST_CHUNK)
+        .forEach { chunk ->
+          transactionTemplate.executeWithoutResult {
+            chunk.forEach { (newSeries, newBooks) ->
+              // CUSTOM FORK: indexed lookup (see the SERIES url index migration) instead of
+              // scanning the whole library once per scanned series.
+              val existingSeries = seriesRepository.findNotDeletedByLibraryIdAndUrlOrNull(library.id, newSeries.url)
+
+              // if series does not exist, save it
+
         if (existingSeries == null) {
           logger.info { "Adding new series: $newSeries" }
           val createdSeries = seriesLifecycle.createSeries(newSeries)
           seriesLifecycle.addBooks(createdSeries, newBooks)
-          tryRestoreSeries(library, createdSeries, newBooks)
+              tryRestoreSeries(library, createdSeries, newBooks, deletedSeriesCandidates)
           tryRestoreBooks(library, newBooks)
+          if (createdSeries.oneshot) skipMetadataRefreshIds.add(createdSeries.id)
           seriesToSortAndRefresh.add(createdSeries)
         } else {
           // if series already exists, update it
@@ -221,15 +240,24 @@ class LibraryContentLifecycle(
             logger.info { "Adding new books: $booksToAdd" }
             seriesLifecycle.addBooks(existingSeries, booksToAdd)
             tryRestoreBooks(library, booksToAdd)
+            if (existingSeries.oneshot) skipMetadataRefreshIds.add(existingSeries.id)
             seriesToSortAndRefresh.add(existingSeries)
           }
         }
-      }
+            }
+          }
+        }
 
       // for all series where books have been removed or added, trigger a sort and refresh metadata
       seriesToSortAndRefresh.distinctBy { it.id }.forEach {
-        seriesLifecycle.sortBooks(it)
-        taskEmitter.refreshSeriesMetadata(it.id)
+        // CUSTOM FORK: a one-shot series holds exactly one book, there is nothing to sort,
+        // and sortBooks costs a query plus a metadata update per series. Skipping it removes
+        // one write per archive in LRR path mode (150k writes for the wnacg library).
+        if (!it.oneshot) seriesLifecycle.sortBooks(it)
+        // CUSTOM FORK: in LRR path mode a one-shot series is one archive; refreshing its
+        // metadata would open that archive during the scan. Skip it unless explicitly asked.
+        val skipRefresh = it.id in skipMetadataRefreshIds || (komgaProperties.lrrPathMode.enabled && it.oneshot)
+        if (!skipRefresh) taskEmitter.refreshSeriesMetadata(it.id)
       }
 
       val existingSidecars = sidecarRepository.findAll()
@@ -278,6 +306,20 @@ class LibraryContentLifecycle(
   }
 
   /**
+   * CUSTOM FORK: load soft-deleted series (with their books) once per scan.
+   *
+   * Only candidates whose books all carry a file hash can be matched later.
+   */
+  private fun loadDeletedSeriesCandidates(): MutableList<Pair<Series, List<Book>>> =
+    seriesRepository
+      .findAll(SearchCondition.Deleted(SearchOperator.IsTrue), SearchContext.empty(), Pageable.unpaged())
+      .content
+      .mapNotNull { deletedCandidate ->
+        val deletedBooks = bookRepository.findAllBySeriesId(deletedCandidate.id).toList()
+        if (deletedBooks.all { it.fileHash.isNotBlank() }) deletedCandidate to deletedBooks else null
+      }.toMutableList()
+
+  /**
    * This will try to match newSeries with a deleted series.
    * Series are matched if:
    * - they have the same number of books
@@ -292,23 +334,18 @@ class LibraryContentLifecycle(
     library: Library,
     newSeries: Series,
     newBooks: List<Book>,
+    allDeletedCandidates: MutableList<Pair<Series, List<Book>>>,
   ) {
+    if (allDeletedCandidates.isEmpty()) return
+
     logger.info { "Try to restore series: $newSeries" }
     val bookSizes = newBooks.map { it.fileSize }
 
     val deletedCandidates =
-      seriesRepository
-        .findAll(SearchCondition.Deleted(SearchOperator.IsTrue), SearchContext.empty(), Pageable.unpaged())
-        .content
-        .mapNotNull { deletedCandidate ->
-          val deletedBooks = bookRepository.findAllBySeriesId(deletedCandidate.id)
-          val deletedBooksSizes = deletedBooks.map { it.fileSize }
-          if (newBooks.size == deletedBooks.size && bookSizes.containsAll(deletedBooksSizes) && deletedBooksSizes.containsAll(bookSizes) && deletedBooks.all { it.fileHash.isNotBlank() }) {
-            deletedCandidate to deletedBooks
-          } else {
-            null
-          }
-        }
+      allDeletedCandidates.filter { (_, deletedBooks) ->
+        val deletedBooksSizes = deletedBooks.map { it.fileSize }
+        newBooks.size == deletedBooks.size && bookSizes.containsAll(deletedBooksSizes) && deletedBooksSizes.containsAll(bookSizes)
+      }
     logger.debug { "Deleted series candidates: $deletedCandidates" }
 
     if (deletedCandidates.isNotEmpty()) {
@@ -322,6 +359,7 @@ class LibraryContentLifecycle(
         }
 
       if (match != null) {
+        allDeletedCandidates.remove(match)
         // restore series
         logger.info { "Match found, restore $match into $newSeries" }
         transactionTemplate.executeWithoutResult {
@@ -491,4 +529,5 @@ class LibraryContentLifecycle(
       readListLifecycle.deleteEmptyReadLists()
     }
   }
+
 }

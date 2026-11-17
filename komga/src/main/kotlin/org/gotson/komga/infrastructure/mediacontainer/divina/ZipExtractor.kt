@@ -1,5 +1,7 @@
 package org.gotson.komga.infrastructure.mediacontainer.divina
 
+import com.github.benmanes.caffeine.cache.Caffeine
+import io.github.oshai.kotlinlogging.KotlinLogging
 import net.greypanther.natsort.CaseInsensitiveSimpleNaturalComparator
 import org.apache.commons.compress.archivers.ArchiveEntry
 import org.apache.commons.compress.archivers.zip.ZipFile
@@ -10,12 +12,32 @@ import org.gotson.komga.infrastructure.util.getZipEntryBytes
 import org.gotson.komga.infrastructure.util.use
 import org.springframework.stereotype.Service
 import java.nio.file.Path
+import java.util.concurrent.TimeUnit
+
+private val logger = KotlinLogging.logger {}
 
 @Service
 class ZipExtractor(
   private val contentDetector: ContentDetector,
 ) : DivinaExtractor {
   private val natSortComparator: Comparator<String> = CaseInsensitiveSimpleNaturalComparator.getInstance()
+
+  /**
+   * CUSTOM FORK: one open ZIP per recently read book, instead of one per page request.
+   *
+   * Opening a ZipFile reads the end-of-central-directory and the central directory; on the
+   * CloudDrive2/115 mount each open is a (sometimes large) transfer, so serving a 200-page
+   * book used to re-read that directory 200 times. The handle is kept for a few books and
+   * closed when evicted; Apache Commons ZipFile is not thread-safe, so reads synchronise on
+   * the instance.
+   */
+  private val openArchives =
+    Caffeine
+      .newBuilder()
+      .maximumSize(8)
+      .expireAfterAccess(10, TimeUnit.MINUTES)
+      .removalListener<Path, ZipFile> { _, zip, _ -> runCatching { zip?.close() } }
+      .build<Path, ZipFile>()
 
   override fun mediaTypes(): List<String> = listOf(MediaType.ZIP.type)
 
@@ -71,5 +93,25 @@ class ZipExtractor(
   override fun getEntryStream(
     path: Path,
     entryName: String,
-  ): ByteArray = getZipEntryBytes(path, entryName)
+  ): ByteArray {
+    val zip =
+      try {
+        openArchives.get(path) {
+          ZipFile.builder().setPath(path).setUseUnicodeExtraFields(true).setIgnoreLocalFileHeader(true).get()
+        }
+      } catch (e: Exception) {
+        logger.debug(e) { "Could not cache ZIP handle for $path, falling back" }
+        return getZipEntryBytes(path, entryName)
+      }
+
+    return synchronized(zip) {
+      val entry = zip.getEntry(entryName)
+      if (entry == null) {
+        // entry may only be resolvable through its local header (unicode extra fields)
+        getZipEntryBytes(path, entryName)
+      } else {
+        zip.getInputStream(entry).use { it.readBytes() }
+      }
+    }
+  }
 }

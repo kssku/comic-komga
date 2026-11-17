@@ -55,7 +55,7 @@ push() {
   log "push: ${ARCHIVE_DIR} -> ${PUSH_SSH}:${PUSH_DEST}"
   # --no-same-permissions: the FUSE mount refuses chmod on directories, which would
   # make tar exit non-zero even though every file was written.
-  tar -C "${ARCHIVE_DIR}" -cf - . | ssh ${PUSH_SSH} "tar --no-same-owner --no-same-permissions -xmf - -C ${PUSH_DEST}"
+  tar -C "${ARCHIVE_DIR}" -cf - . | ssh ${PUSH_SSH} "tar --no-same-owner --no-same-permissions --no-overwrite-dir -xmf - -C ${PUSH_DEST}"
 }
 
 reconcile() {

@@ -46,6 +46,18 @@ def post(url, body, token):
         return None, str(exc)
 
 
+def mark_failures(args, comic_ids):
+    """记账失败次数：达到上限就转 permanent_failed，避免永远重试同一个坏 id。"""
+    values = ",".join("('" + c.replace("'", "''") + "')" for c in comic_ids)
+    sql = (
+        "update {site}_archive a set retry_count = coalesce(a.retry_count,0) + 1, "
+        "state = case when coalesce(a.retry_count,0) + 1 >= {max_retry} then 'permanent_failed' else a.state end, "
+        "updated_at = extract(epoch from now())::bigint "
+        "from (values {values}) as v(comic_id) where a.comic_id = v.comic_id"
+    ).format(site=args.site, max_retry=args.max_retry, values=values)
+    psql(args, sql)
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--site", default="wnacg", choices=["wnacg", "pica", "jm"])
@@ -69,6 +81,7 @@ def main():
         % (args.site, args.max_retry, args.limit)
     )
     ids = [line.split("\t")[0] for line in psql(args, sql)]
+    failed_ids = []
     print("pending ids selected: %d" % len(ids))
     if not ids:
         return
@@ -96,6 +109,10 @@ def main():
         for item in payload.get("failed", []):
             print("  %s -> %s" % (item.get("comicId"), (item.get("error") or "")[:120]))
             failed += 1
+            failed_ids.append(item.get("comicId"))
+
+    if failed_ids:
+        mark_failures(args, failed_ids)
 
     print("created: %d, failed: %d" % (created, failed))
 

@@ -1,0 +1,109 @@
+# 三位一体：comic-meta-pg（主元数据） + clouddrive2（115） + mangrab（下载） + komga（阅读）
+# 用法：
+#   cp .env.example .env && 编辑 .env
+#   把编译好的 komga jar 放到 ./komga.jar（或改 KOMGA_JAR）
+#   docker compose up -d
+name: comic-stack
+
+services:
+  comic-meta-pg:
+    image: postgres:16
+    container_name: comic-meta-pg
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${COMIC_META_DB:-comic_meta}
+      POSTGRES_USER: ${COMIC_META_SUPERUSER:-comic}
+      POSTGRES_PASSWORD: ${COMIC_META_SUPERUSER_PASSWORD:?请在 .env 设置 COMIC_META_SUPERUSER_PASSWORD}
+      KOMGA_DB_USER: ${KOMGA_DB_USER:-komga_ro}
+      KOMGA_DB_PASSWORD: ${KOMGA_DB_PASSWORD:?请在 .env 设置 KOMGA_DB_PASSWORD}
+      MANGRAB_DB_USER: ${MANGRAB_DB_USER:-mangrab_rw}
+      MANGRAB_DB_PASSWORD: ${MANGRAB_DB_PASSWORD:?请在 .env 设置 MANGRAB_DB_PASSWORD}
+    ports:
+      - "127.0.0.1:${COMIC_META_PORT:-55432}:5432"
+    volumes:
+      - comic-meta-pgdata:/var/lib/postgresql/data
+      - ./initdb:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${COMIC_META_SUPERUSER:-comic} -d ${COMIC_META_DB:-comic_meta}"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+    mem_limit: 2g
+    shm_size: 256m
+
+  clouddrive2:
+    image: cloudnas/clouddrive2:latest
+    container_name: clouddrive2
+    restart: unless-stopped
+    privileged: true
+    network_mode: host
+    devices:
+      - /dev/fuse
+    cap_add:
+      - CAP_SYS_ADMIN
+    environment:
+      CLOUDDRIVE_HOME: /Config
+      PORT: ${CLOUDDRIVE_PORT:-19798}
+      TZ: ${TZ:-Asia/Shanghai}
+    volumes:
+      - ${CLOUDDRIVE_CONFIG:-./data/clouddrive2/Config}:/Config
+      - ${CLOUDDRIVE_MEDIA:-./data/clouddrive2/media}:/media:shared
+      - ${CLOUDDRIVE_CLOUDNAS:-./data/clouddrive2/CloudNAS}:/CloudNAS:shared
+
+  mangrab:
+    build:
+      context: ${MANGRAB_SRC:-../../../comic-downloader-platform}
+    image: mangrab:local
+    container_name: mangrab
+    restart: unless-stopped
+    depends_on:
+      comic-meta-pg:
+        condition: service_healthy
+    environment:
+      MANGRAB_BIND: 0.0.0.0
+      MANGRAB_PORT: 8080
+      MANGRAB_DATA_DIR: /data
+      MANGRAB_STATIC_DIR: /app/static
+      PGHOST: comic-meta-pg
+      PGPORT: 5432
+      PGDATABASE: ${COMIC_META_DB:-comic_meta}
+      PGUSER: ${MANGRAB_DB_USER:-mangrab_rw}
+      PGPASSWORD: ${MANGRAB_DB_PASSWORD}
+      KOMGA_SCAN_URL: ${KOMGA_SCAN_URL:-}
+      TZ: ${TZ:-Asia/Shanghai}
+    ports:
+      - "${MANGRAB_PORT:-8080}:8080"
+    volumes:
+      - ${MANGRAB_DATA:-./data/mangrab}:/data
+      - ${CLOUDDRIVE_MEDIA:-./data/clouddrive2/media}:/content
+
+  komga:
+    image: eclipse-temurin:21-jre
+    container_name: komga
+    restart: unless-stopped
+    depends_on:
+      comic-meta-pg:
+        condition: service_healthy
+    command:
+      - java
+      - -Xmx${KOMGA_HEAP:-4g}
+      - -jar
+      - /app/komga.jar
+      - --server.port=25600
+      - --komga.config-dir=/config
+      - --komga.lrr-path-mode.enabled=true
+      - --komga.comic-meta.enabled=true
+      - --komga.comic-meta.db-url=jdbc:postgresql://comic-meta-pg:5432/${COMIC_META_DB:-comic_meta}
+      - --komga.comic-meta.db-user=${KOMGA_DB_USER:-komga_ro}
+      - --komga.comic-meta.db-password=${KOMGA_DB_PASSWORD}
+      - --komga.comic-meta.source-id=${KOMGA_SOURCE:-wnacg}
+    ports:
+      - "${KOMGA_PORT:-25600}:25600"
+    volumes:
+      - ${KOMGA_JAR:-./komga.jar}:/app/komga.jar:ro
+      - ${KOMGA_CONFIG:-./data/komga}:/config
+      - ${CLOUDDRIVE_MEDIA:-./data/clouddrive2/media}:/content:ro
+
+volumes:
+  comic-meta-pgdata:
+    driver: local

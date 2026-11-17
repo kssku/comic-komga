@@ -110,3 +110,14 @@ Komga 保留 SQLite（阅读进度、缩略图、搜索索引），只从 comic_
 - 对账频率（建议每日一次，低谷时段）
 - cover-service 的缓存目录与 Komga `artworkMirrorRoot` 的路径约定
 - 多站点（jm / pica）接入时，`comic_id` 是否需要站点前缀（当前靠目录区分）
+## 9. 落地：deploy/integrated
+
+一套 compose（deploy/integrated/docker-compose.yml）装四个服务：comic-meta-pg、clouddrive2、
+mangrab、komga。
+
+- 主数据库 = comic_meta（PostgreSQL），Komga 只读，Mangrab 读写
+- initdb/01-roles.sh 首次初始化时创建 komga_ro（只读）与 mangrab_rw（读写）
+- 库根目录约定为 /content/<站点>（如 /content/wnacg）
+- 下载完成后由 scripts/komga-scan-notify.sh 触发 Komga 扫描（也可配 KOMGA_SCAN_URL）
+
+已验证：docker compose config -q 通过（Compose v2.26）。全栈起停尚未在 154 上实跑。

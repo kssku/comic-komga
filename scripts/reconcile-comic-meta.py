@@ -14,10 +14,12 @@ Usage:
       --pg-host 127.0.0.1 --pg-db comic_meta --pg-user komga_ro [--fix] [--check-pages N]
 """
 import argparse
+import base64
 import collections
 import os
 import subprocess
 import sys
+import urllib.request
 
 
 def psql(args, sql):
@@ -53,7 +55,7 @@ def count_pages(path):
         return -1
 
 
-def main():
+def build_parser():
     ap = argparse.ArgumentParser()
     ap.add_argument("--root", required=True, help="library root containing <bucket>/<id>.cbz")
     ap.add_argument("--site", default="wnacg", choices=["wnacg", "pica", "jm"])
@@ -65,7 +67,16 @@ def main():
     ap.add_argument("--check-pages", type=int, default=0, metavar="N",
                     help="verify page_count for up to N candidates by reading the archive")
     ap.add_argument("--samples", type=int, default=5)
-    args = ap.parse_args()
+    ap.add_argument("--komga-url", default="", help="e.g. http://komga:25600")
+    ap.add_argument("--komga-user", default="")
+    ap.add_argument("--komga-pass", default="")
+    ap.add_argument("--komga-library", default="", help="library id to scan after a repair")
+    ap.add_argument("--interval", type=int, default=0, metavar="SECONDS",
+                    help="0 = run once; >0 = loop (sidecar mode)")
+    return ap
+
+
+def run_once(args):
 
     print("listing archives under " + args.root + " ...")
     files = list_archives(args.root)
@@ -107,13 +118,13 @@ def main():
 
     if not args.fix:
         print("\nDRY-RUN: nothing written. Re-run with --fix to repair the safe class.")
-        return
+        return 0
 
     bad = {m[0] for m in page_mismatch}
     safe = [cid for cid in repairable if cid not in bad]
     if not safe:
         print("\nnothing to repair.")
-        return
+        return 0
 
     print("\nrepairing %d rows (%s_archive.state -> done) ..." % (len(safe), args.site))
     chunk = 500
@@ -134,6 +145,48 @@ def main():
             sys.exit("update failed: " + out.stderr.strip()[:400])
         print("  %d/%d" % (i + len(part), len(safe)))
     print("done.")
+    return len(safe)
+
+
+def notify_komga(args):
+    """Ask Komga to scan the library, so newly archived books show up."""
+    if not (args.komga_url and args.komga_library):
+        return
+    url = "%s/api/v1/libraries/%s/scan" % (args.komga_url.rstrip("/"), args.komga_library)
+    req = urllib.request.Request(url, method="POST")
+    if args.komga_user:
+        token = base64.b64encode(("%s:%s" % (args.komga_user, args.komga_pass)).encode()).decode()
+        req.add_header("Authorization", "Basic " + token)
+    try:
+        with urllib.request.urlopen(req, timeout=30) as resp:
+            print("komga scan requested (%d)" % resp.status)
+    except Exception as exc:
+        print("komga scan request failed: %s" % exc)
+
+
+def main():
+    # -- arguments are parsed inside run_once; for sidecar mode we re-parse per round
+    ap = argparse.ArgumentParser(add_help=False)
+    ap.add_argument("--interval", type=int, default=0)
+    known, _ = ap.parse_known_args()
+    if known.interval <= 0:
+        parser_args = build_parser().parse_args()
+        fixed = run_once(parser_args)
+        if fixed:
+            notify_komga(parser_args)
+        return
+    while True:
+        parser_args = build_parser().parse_args()
+        try:
+            fixed = run_once(parser_args)
+            if fixed:
+                notify_komga(parser_args)
+        except SystemExit:
+            raise
+        except Exception as exc:  # keep the sidecar alive
+            print("sync round failed: %s" % exc)
+        print("sleeping %ds" % parser_args.interval)
+        time.sleep(parser_args.interval)
 
 
 if __name__ == "__main__":

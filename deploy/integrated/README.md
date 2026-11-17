@@ -82,3 +82,30 @@ docker compose up -d clouddrive2
 ```
 
 这也是为什么 production 的 compose 要保留 CLOUDDRIVE_CONFIG 卷：不要 docker compose down -v。
+
+## 对账/同步边车
+
+`scripts/reconcile-comic-meta.py` 既是报告工具，也能当边车：
+
+```bash
+# 一次性：报告（默认 dry-run）
+PGPASSWORD=... python3 scripts/reconcile-comic-meta.py --root /content/wnacg/oneshots
+
+# 修复安全类别（文件在、状态 pending/failed、页数一致 -> done），并让 Komga 扫描
+PGPASSWORD=... python3 scripts/reconcile-comic-meta.py \
+  --root /content/wnacg/oneshots --pg-user mangrab_rw --fix \
+  --komga-url http://komga:25600 --komga-user <email> --komga-pass <pass> \
+  --komga-library <libraryId>
+
+# 常驻边车：每 10 分钟一轮
+PGPASSWORD=... python3 scripts/reconcile-comic-meta.py \
+  --root /content/wnacg/oneshots --pg-user mangrab_rw --fix --interval 600 \
+  --komga-url http://komga:25600 --komga-user <email> --komga-pass <pass> \
+  --komga-library <libraryId>
+```
+
+建议用宿主机的 systemd timer 或 cron 跑（镜像里没有 python，别塞进 compose 主栈）：
+
+```cron
+*/10 * * * * PGPASSWORD=... /usr/bin/python3 /opt/komga-clouddrive/scripts/reconcile-comic-meta.py --root /content/wnacg/oneshots --pg-user mangrab_rw --fix --komga-url http://127.0.0.1:25600 --komga-user ... --komga-pass ... --komga-library ... >> /var/log/comic-sync.log 2>&1
+```

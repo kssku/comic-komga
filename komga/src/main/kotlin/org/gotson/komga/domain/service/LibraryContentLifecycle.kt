@@ -140,8 +140,18 @@ class LibraryContentLifecycle(
       // this can be used to detect changed series even if their file modified date did not change, for example because of NFS/SMB cache
       val seriesUrlWithDeletedBooks = seriesToSortAndRefresh.map { it.url }
 
+      // CUSTOM FORK: the per-series lookup below used to be one query each, and SERIES has no
+      // index on URL, so every lookup scanned the whole library. With one series per book in
+      // LRR path mode (one-shot archives) that is O(n^2): a 26k-book scan slowed from ~17 to
+      // ~0 series/s. One query for the whole library and a map lookup fixes the scaling.
+      val existingSeriesByUrl =
+        seriesRepository
+          .findAllByLibraryId(library.id)
+          .filter { it.deletedDate == null }
+          .associateBy { it.url }
+
       scannedSeries.forEach { (newSeries, newBooks) ->
-        val existingSeries = seriesRepository.findNotDeletedByLibraryIdAndUrlOrNull(library.id, newSeries.url)
+        val existingSeries = existingSeriesByUrl[newSeries.url]
 
         // if series does not exist, save it
         if (existingSeries == null) {

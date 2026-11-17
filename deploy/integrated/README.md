@@ -66,3 +66,19 @@ scripts/komga-scan-notify.sh
   （否则 bind mount 报 “not a shared mount”）
 - 同一个 115 账号不要在两台机器上同时挂载（会互相干扰）
 - 备份：`./data/komga` + comic_meta 即可；漫画文件在 115，不需要备份；封面缓存以后另算
+
+## 常见问题：重建 clouddrive2 后 115 挂载消失
+
+删掉容器后宿主机上的 FUSE 挂载点会变成“传输端点尚未连接”（stale），新容器不会再自动挂上。
+
+处理：
+
+```bash
+docker compose stop clouddrive2
+umount -l /path/to/media/115open || fusermount -uz /path/to/media/115open
+rm -rf /path/to/media/115open
+docker compose up -d clouddrive2
+# 若仍未挂上：打开 http://<host>:19798 在 CloudDrive2 里把该网盘重新“挂载”
+```
+
+这也是为什么 production 的 compose 要保留 CLOUDDRIVE_CONFIG 卷：不要 docker compose down -v。

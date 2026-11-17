@@ -138,6 +138,27 @@ class ComicInfoProvider(
     appendVolumeToTitle: Boolean,
     importExternalXml: Boolean,
   ): SeriesMetadataPatch? {
+    // CUSTOM FORK: a one-shot archive carries no ComicInfo <Series> that is meaningful as a
+    // Komga series name (it holds the author or the scanlation group). Use the external
+    // comic-meta title instead, which costs no archive read.
+    if (book.book.oneshot) {
+      comicMetaRepository.findBookMetadata(book.book.name)?.title?.let { title ->
+        return SeriesMetadataPatch(
+          title = title,
+          titleSort = title,
+          status = null,
+          summary = null,
+          readingDirection = null,
+          publisher = null,
+          ageRating = null,
+          language = null,
+          genres = null,
+          totalBookCount = null,
+          collections = emptySet(),
+        )
+      }
+    }
+
     getComicInfo(book, importExternalXml)?.let { comicInfo ->
       val readingDirection =
         when (comicInfo.manga) {

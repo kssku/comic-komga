@@ -61,6 +61,10 @@ class ComicMetaRepository(
   @Volatile
   private var enabled: Boolean = enabledByConfig && dbUrl.isNotBlank() && tablePrefix != null
 
+  /** CUSTOM FORK: whether lookups are live, so callers can decide to request metadata refresh. */
+  val isEnabled: Boolean
+    get() = enabled
+
   @Volatile
   private var connection: Connection? = null
 

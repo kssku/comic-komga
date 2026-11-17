@@ -29,6 +29,7 @@ import org.gotson.komga.domain.persistence.ThumbnailBookRepository
 import org.gotson.komga.domain.persistence.ThumbnailSeriesRepository
 import org.gotson.komga.infrastructure.configuration.KomgaSettingsProvider
 import org.gotson.komga.infrastructure.configuration.KomgaProperties
+import org.gotson.komga.infrastructure.metadata.comicmeta.ComicMetaRepository
 import org.gotson.komga.infrastructure.hash.Hasher
 import org.gotson.komga.language.notEquals
 import org.gotson.komga.language.toIndexedMap
@@ -61,6 +62,7 @@ class LibraryContentLifecycle(
   private val taskEmitter: TaskEmitter,
   private val transactionTemplate: TransactionTemplate,
   private val komgaProperties: KomgaProperties,
+  private val comicMetaRepository: ComicMetaRepository,
   private val hasher: Hasher,
   private val bookMetadataRepository: BookMetadataRepository,
   private val seriesMetadataRepository: SeriesMetadataRepository,
@@ -256,7 +258,12 @@ class LibraryContentLifecycle(
         if (!it.oneshot) seriesLifecycle.sortBooks(it)
         // CUSTOM FORK: in LRR path mode a one-shot series is one archive; refreshing its
         // metadata would open that archive during the scan. Skip it unless explicitly asked.
-        val skipRefresh = it.id in skipMetadataRefreshIds || (komgaProperties.lrrPathMode.enabled && it.oneshot)
+        // CUSTOM FORK: skipping the refresh is only meant to avoid opening the archive. When the
+        // external comic-meta DB is enabled, ComicInfoProvider answers from PostgreSQL instead of
+        // the archive, so one-shot series can be refreshed without any cloud I/O.
+        val skipRefresh =
+          it.id in skipMetadataRefreshIds && !comicMetaRepository.isEnabled ||
+            (komgaProperties.lrrPathMode.enabled && it.oneshot && !comicMetaRepository.isEnabled)
         if (!skipRefresh) taskEmitter.refreshSeriesMetadata(it.id)
       }
 

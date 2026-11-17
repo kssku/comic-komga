@@ -6,7 +6,8 @@ export function getLibraryDefaults(): LibraryCreationDto {
     analyzeDimensions: true,
     convertToCbz: false,
     emptyTrashAfterScan: false,
-    hashFiles: true,
+    // CUSTOM FORK: off by default; hashing is a path hash here, so it only queues no-op tasks.
+    hashFiles: false,
     hashKoreader: false,
     hashPages: false,
     importBarcodeIsbn: false,

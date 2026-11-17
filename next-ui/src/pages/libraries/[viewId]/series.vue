@@ -5,6 +5,25 @@
       :count="totalElements"
     />
 
+    <!--  CUSTOM FORK: LANraragi-style split between multi-volume series and single-volume
+          works. Drives the same route-query filter as the filter drawer.  -->
+    <v-btn-toggle
+      v-model="oneshotFilter"
+      class="ms-4 d-none d-md-inline-flex"
+      mandatory
+      density="compact"
+      variant="outlined"
+      divided
+    >
+      <v-btn
+        v-for="option in oneshotFilterOptions"
+        :key="option.value"
+        size="small"
+        :value="option.value"
+        :text="$formatMessage(option.message)"
+      />
+    </v-btn-toggle>
+
     <v-spacer />
 
     <PosterSizeSlider />
@@ -196,17 +215,30 @@
     v-else
     v-model:page1="page1"
     :paging="appStore.browsingPaging"
-    :items="dataItems"
-    :presentation-mode="presentationModeEffective"
+    :items="asItems(dataItems)"
+    :presentation-mode="oneshotFilter === 'oneshot' ? 'grid' : presentationModeEffective"
     :has-next-page="hasNextPage"
     :page-count="pageCount"
     @load-next-page="loadNextPage()"
   >
     <template #default="{ item, isSelected, preSelect, toggleSelect }">
-      <SeriesCard
-        v-if="presentationModeEffective === 'grid'"
+      <!--  CUSTOM FORK: one-shots are single-volume works; LRR lists them as individual
+            entries, so this mode renders books, not one-book series cards.  -->
+      <BookCard
+        v-if="oneshotFilter === 'oneshot'"
+        show-series
         stretch-poster
-        :series="item"
+        :book="toBook(item)"
+        :selected="isSelected"
+        :pre-select="preSelect"
+        :width="display.xs.value ? 'auto' : appStore.gridCardWidth"
+        @selection="(_val, event) => toggleSelect(event as MouseEvent)"
+      />
+
+      <SeriesCard
+        v-else-if="presentationModeEffective === 'grid'"
+        stretch-poster
+        :series="toSeries(item)"
         :selected="isSelected"
         :pre-select="preSelect"
         :width="display.xs.value ? 'auto' : appStore.gridCardWidth"
@@ -214,9 +246,9 @@
       />
 
       <SeriesCardWide
-        v-if="presentationModeEffective === 'list'"
+        v-else-if="presentationModeEffective === 'list'"
         stretch-poster
-        :series="item"
+        :series="toSeries(item)"
         :selected="isSelected"
         :pre-select="preSelect"
         :width="appStore.gridCardWidth"
@@ -229,6 +261,7 @@
 <script lang="ts" setup>
 import { useInfiniteQuery, useQuery } from '@pinia/colada'
 import { seriesListQuery, seriesListQueryInfinite } from '@/colada/series'
+import { bookListQuery, bookListQueryInfinite } from '@/colada/books'
 
 import { PageRequest } from '@/types/PageRequest'
 import { useGetLibrariesByViewId } from '@/composables/libraries'
@@ -247,6 +280,7 @@ import {
   countFilter,
 } from '@/functions/filter'
 import { commonMessages } from '@/utils/i18n/common-messages'
+import { defineMessage } from 'vue-intl'
 import { useIntlFormatter } from '@/composables/intlFormatter'
 import { sortSeries } from '@/types/sort'
 import PosterSizeSlider from '@/components/PosterSizeSlider.vue'
@@ -257,7 +291,12 @@ import { useFilterContributors, useFilters } from '@/composables/filter'
 import ChipCount from '@/components/ChipCount.vue'
 import { contributorsRolesMessages } from '@/types/referential'
 import { useSelectionContextualActions } from '@/composables/selection'
-import type { SearchConditionSeries } from '@/generated/openapi'
+import type {
+  BookDto,
+  SearchConditionBook,
+  SearchConditionSeries,
+  SeriesDto,
+} from '@/generated/openapi'
 
 const route = useRoute('/libraries/[viewId]/series')
 const libraryViewId = route.params.viewId
@@ -307,6 +346,46 @@ const {
   'oneshot',
 ])
 
+// CUSTOM FORK: LANraragi keeps single-volume works ("oneshots") apart from multi-volume
+// series in its UI; Komga only offers that as a checkbox buried in the filter drawer.
+// This toolbar toggle drives the very same route-query filter, so the two stay in sync.
+const oneshotFilterOptions = [
+  {
+    value: 'all',
+    message: defineMessage({
+      description: 'Series list filter: show both multi-volume series and single-volume works',
+      defaultMessage: 'All',
+      id: 'Q3XcC5',
+    }),
+  },
+  {
+    value: 'series',
+    message: defineMessage({
+      description: 'Series list filter: multi-volume series only',
+      defaultMessage: 'Series',
+      id: '6f8q+L',
+    }),
+  },
+  {
+    value: 'oneshot',
+    message: defineMessage({
+      description: 'Series list filter: single-volume works only',
+      defaultMessage: 'One-shots',
+      id: '42E/dM',
+    }),
+  },
+] as const
+
+const oneshotFilter = computed<'all' | 'series' | 'oneshot'>({
+  get() {
+    const include = filters.value.oneshot.filter.i
+    return include === 'i' ? 'oneshot' : include === 'e' ? 'series' : 'all'
+  },
+  set(mode) {
+    filters.value.oneshot.filter.i = mode === 'oneshot' ? 'i' : mode === 'series' ? 'e' : undefined
+  },
+})
+
 const { convertSortOptionDescriptor } = useIntlFormatter()
 const sortActive = appStore.getSortActive(viewName.value, [
   { key: 'metadata.titleSort', order: 'asc' },
@@ -343,38 +422,118 @@ const apiQuery = computed(() => ({
   condition: conds.value,
 }))
 
+const isOneshotMode = computed(() => oneshotFilter.value === 'oneshot')
+
+// CUSTOM FORK: one-shot mode reads the BOOK list instead of the series list.
+//
+// LRR keeps single-volume works apart from multi-volume series and lists them as individual
+// entries. Komga can only express them as one-book series, so listing 150k one-book series
+// cards would be both misleading and heavy. Only book-compatible filters are applied here
+// (library, deleted, read status, tag, contributors); series-only filters are ignored while
+// this mode is active.
+const bookConds = computed(() => ({
+  allOf: [
+    valuesToConditions(libraryIds.value, 'libraryId'),
+    schemaFilterIncludeExcludeToConditions(filters.value.unavailable.filter, 'deleted'),
+    schemaFilterReadStatusToConditions(filters.value.read.filter),
+    schemaFilterStringToConditions(filters.value.tag.filter, 'tag', true),
+    ...Object.entries(filterContributors.value).map(([role, filter]) =>
+      schemaFilterAuthorsToConditions(filter, role),
+    ),
+    { oneShot: { operator: 'isTrue' as const } },
+  ].filter(Boolean) as SearchConditionBook[],
+}))
+
+const oneshotSortActive = appStore.getSortActive(`${viewName.value}_oneshots`, [
+  { key: 'series', order: 'asc' },
+  { key: 'metadata.numberSort', order: 'asc' },
+])
+
 const { data: dataPaged } = useQuery(() => ({
   ...seriesListQuery({
     search: { ...apiQuery.value },
     pageRequest: PageRequest.FromPageSize(appStore.browsingPageSize, page0.value, sortActive.value),
   }),
-  enabled: isBrowsingPaged.value,
+  enabled: isBrowsingPaged.value && !isOneshotMode.value,
+}))
+
+const { data: booksPaged } = useQuery(() => ({
+  ...bookListQuery({
+    search: { condition: bookConds.value },
+    pageRequest: PageRequest.FromPageSize(
+      appStore.browsingPageSize,
+      page0.value,
+      oneshotSortActive.value,
+    ),
+  }),
+  enabled: isBrowsingPaged.value && isOneshotMode.value,
 }))
 
 watch(dataPaged, (newDataPaged) => {
-  if (newDataPaged) pageCount.value = newDataPaged.totalPages ?? 0
+  if (newDataPaged && !isOneshotMode.value) pageCount.value = newDataPaged.totalPages ?? 0
+})
+
+watch(booksPaged, (newBooksPaged) => {
+  if (newBooksPaged && isOneshotMode.value) pageCount.value = newBooksPaged.totalPages ?? 0
 })
 
 const {
   data: dataInfinite,
-  loadNextPage,
-  hasNextPage,
+  loadNextPage: loadNextSeriesPage,
+  hasNextPage: hasNextSeriesPage,
 } = useInfiniteQuery(() => ({
   ...seriesListQueryInfinite({ search: { ...apiQuery.value }, sort: sortActive.value }),
-  enabled: isBrowsingScroll.value,
+  enabled: isBrowsingScroll.value && !isOneshotMode.value,
 }))
+
+const {
+  data: booksInfinite,
+  loadNextPage: loadNextBooksPage,
+  hasNextPage: hasNextBooksPage,
+} = useInfiniteQuery(() => ({
+  ...bookListQueryInfinite({
+    search: { condition: bookConds.value },
+    sort: oneshotSortActive.value,
+  }),
+  enabled: isBrowsingScroll.value && isOneshotMode.value,
+}))
+
 const dataInfiniteFlat = computed(() =>
   dataInfinite.value?.pages.flatMap((it) => it?.content ?? []),
 )
+const booksInfiniteFlat = computed(() =>
+  booksInfinite.value?.pages.flatMap((it) => it?.content ?? []),
+)
 
-const dataItems = computed(() =>
-  isBrowsingPaged.value ? dataPaged.value?.content : dataInfiniteFlat.value,
-)
-const totalElements = computed(() =>
-  isBrowsingPaged.value
+const dataItems = computed<SeriesDto[] | BookDto[]>(() => {
+  if (isOneshotMode.value) {
+    return isBrowsingPaged.value
+      ? (booksPaged.value?.content ?? [])
+      : (booksInfiniteFlat.value ?? [])
+  }
+  return isBrowsingPaged.value ? (dataPaged.value?.content ?? []) : (dataInfiniteFlat.value ?? [])
+})
+const totalElements = computed(() => {
+  if (isOneshotMode.value) {
+    return isBrowsingPaged.value
+      ? booksPaged.value?.totalElements
+      : booksInfinite.value?.pages?.[0]?.totalElements
+  }
+  return isBrowsingPaged.value
     ? dataPaged.value?.totalElements
-    : dataInfinite.value?.pages?.[0]?.totalElements,
+    : dataInfinite.value?.pages?.[0]?.totalElements
+})
+
+const hasNextPage = computed(() =>
+  isOneshotMode.value ? hasNextBooksPage.value : hasNextSeriesPage.value,
 )
+const loadNextPage = () => (isOneshotMode.value ? loadNextBooksPage() : loadNextSeriesPage())
+
+// The list holds either series or books depending on the mode, so the browser is fed an
+// untyped array and each card narrows the item back to its own DTO type.
+const asItems = (items: SeriesDto[] | BookDto[]) => items as unknown[]
+const toSeries = (item: unknown) => item as SeriesDto
+const toBook = (item: unknown) => item as BookDto
 
 useSelectionContextualActions(dataItems)
 

@@ -84,8 +84,11 @@ const titleAndLines = computed<{ title: ItemCardTitle; lines: ItemCardLine[] }>(
       classes: 'text-warning',
     }
   else if (book.value.media.status === MediaStatus.Unknown)
+    // CUSTOM FORK: an unanalyzed book is perfectly readable, so do not advertise it as a
+    // pending state. Show the file format (derived from the name) instead of "not analyzed".
     footer = {
-      text: intl.formatMessage(mediaStatusMessages[MediaStatus.Unknown]),
+      text: format.value,
+      allowEmpty: true,
     }
   else
     footer = {
@@ -127,7 +130,7 @@ other {# pages}
 })
 
 const { isAdmin } = useCurrentUser()
-const { canRead, isEpubReader } = useBook(book)
+const { canRead, isEpubReader, format } = useBook(book)
 const quickActionIcon = computed(() => (isAdmin.value ? 'i-mdi:pencil' : undefined))
 const quickActionProps = computed(() => ({
   id: `${id}_quick`,

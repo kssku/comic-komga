@@ -181,6 +181,7 @@
             "
           />
 
+          <!-- CUSTOM FORK: an unanalyzed book is readable right away; analysis is optional. -->
           <v-alert
             v-if="book.media.status === MediaStatus.Unknown"
             type="info"
@@ -188,8 +189,9 @@
             :text="
               $formatMessage({
                 description: 'Book view: media unknown',
-                defaultMessage: 'The book file is yet to be analyzed',
-                id: 'pHycdf',
+                defaultMessage:
+                  'Not analyzed yet - you can read it right away. Analysis (page count, dimensions, cover) is optional and runs on first open or on demand.',
+                id: 'xvKwoU',
               })
             "
           />

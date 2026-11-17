@@ -151,7 +151,7 @@
 
             <v-row class="text-caption" align="center">
               <v-col cols="auto" v-if="book.media.status === MediaStatus.UNKNOWN">
-                {{ book.metadata.number }} · {{ $t('book_card.unknown') }}
+                {{ book.metadata.number }} · {{ bookFormatLabel }}
               </v-col>
 
               <v-col cols="auto" v-else>
@@ -443,7 +443,7 @@ import BookActionsMenu from '@/components/menus/BookActionsMenu.vue'
 import ItemCard from '@/components/ItemCard.vue'
 import ToolbarSticky from '@/components/bars/ToolbarSticky.vue'
 import {groupAuthorsByRole} from '@/functions/authors'
-import {getBookFormatFromMedia, getBookReadRouteFromMedia} from '@/functions/book-format'
+import {getBookFormatFromMedia, getBookFormatFromUrl, getBookReadRouteFromMedia} from '@/functions/book-format'
 import {getPagesLeft, getReadProgress, getReadProgressPercentage} from '@/functions/book-progress'
 import {getBookTitleCompact} from '@/functions/book-title'
 import {bookFileUrl, bookThumbnailUrl} from '@/functions/urls'
@@ -536,7 +536,13 @@ export default Vue.extend({
       return this.book.deleted || this.$store.getters.getLibraryById(this.book.libraryId).unavailable
     },
     canRead(): boolean {
-      return this.book.media.status === 'READY' && this.$store.getters.mePageStreaming && !this.unavailable
+      // CUSTOM FORK: a lazy scan leaves the book UNKNOWN until the reader opens it;
+      // the first page request analyzes it server-side. Reading must not wait for it.
+      const status = this.book.media.status
+      return (status === 'READY' || status === 'UNKNOWN') && this.$store.getters.mePageStreaming && !this.unavailable
+    },
+    bookFormatLabel(): string {
+      return getBookFormatFromUrl(this.book.url) || this.$t('book_card.unknown').toString()
     },
     canDownload(): boolean {
       return this.$store.getters.meFileDownload && !this.unavailable

@@ -6,7 +6,7 @@ import i18n from '@/i18n'
 import {MediaStatus} from '@/types/enum-books'
 import {getFileSize} from '@/functions/file'
 import {ReadListDto} from '@/types/komga-readlists'
-import {getBookReadRouteFromMedia} from '@/functions/book-format'
+import {getBookFormatFromUrl, getBookReadRouteFromMedia} from '@/functions/book-format'
 
 export enum ItemTypes {
   BOOK, SERIES, COLLECTION, READLIST
@@ -108,7 +108,9 @@ export class BookItem extends Item<BookDto> {
       case MediaStatus.UNSUPPORTED:
         return `<div class="text-truncate warning--text">${i18n.t('book_card.unsupported')}</div>`
       case MediaStatus.UNKNOWN:
-        return `<div class="text-truncate">${i18n.t('book_card.unknown')}</div>`
+        // CUSTOM FORK: "not analyzed yet" is not a pending state - the book is readable,
+        // so show its format (from the file name) instead of a placeholder.
+        return `<div class="text-truncate">${getBookFormatFromUrl(this.item.url)}</div>`
       default:
         let text
         let title

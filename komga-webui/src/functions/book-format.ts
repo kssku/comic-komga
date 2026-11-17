@@ -37,6 +37,18 @@ export function getBookFormatFromMediaType(mediaType: string): BookFormat {
   }
 }
 
+/**
+ * CUSTOM FORK: format derived from the file name only, for books that have not been analyzed
+ * yet (their mediaType is empty). Reading such a book is allowed; the format label just needs
+ * something meaningful to show.
+ */
+export function getBookFormatFromUrl(url?: string): string {
+  if (!url) return ''
+  const clean = url.split('?')[0]
+  const ext = clean.split('.').pop()
+  return ext ? ext.toUpperCase() : ''
+}
+
 export function getBookReadRouteFromMedia(media: MediaDto): string {
   switch (lowerCase(media.mediaProfile)) {
     case 'epub':

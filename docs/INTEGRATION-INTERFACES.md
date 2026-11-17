@@ -207,3 +207,11 @@ loop:
 
 这样三种数据就形成闭环：comic_meta 的 pending 队列 → Mangrab 下载 → 115 → 状态回写 → Komga 可见。
 唯一还缺的是「Mangrab 直接把 state 写成 done」的实时性（现在靠边车每轮补）。
+
+
+实现见 `scripts/download-dispatch.py`（只负责下单，不写状态）：
+
+```bash
+PGPASSWORD=... ./scripts/download-dispatch.py --site wnacg --limit 20 \
+  --mangrab-url http://127.0.0.1:8080 --mangrab-token "$JM_AUTH_TOKEN" [--dry-run]
+```

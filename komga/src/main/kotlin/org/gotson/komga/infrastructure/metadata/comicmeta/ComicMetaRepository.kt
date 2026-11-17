@@ -219,6 +219,39 @@ class ComicMetaRepository(
   }
 
   /**
+   * CUSTOM FORK: batch existence check used by the scanner.
+   *
+   * A bulk scan cannot afford one round-trip per book just to decide whether to refresh its
+   * metadata. This answers "which of these comic ids does the DB know" in one query per 500
+   * ids, so only the known ones get a metadata refresh task (and never fall back to opening
+   * the archive).
+   */
+  fun findKnownComicIds(comicIds: Collection<String>): Set<String> {
+    if (comicIds.isEmpty() || !retryAllowedNow()) return emptySet()
+    val prefix = tablePrefix ?: return emptySet()
+    return try {
+      synchronized(lock) {
+        val conn = connection() ?: return emptySet()
+        val known = LinkedHashSet<String>()
+        comicIds.chunked(500).forEach { chunk ->
+          val placeholders = chunk.joinToString(",") { "?" }
+          conn.prepareStatement("SELECT comic_id FROM ${prefix}_volumes WHERE comic_id IN (${placeholders})").use { st ->
+            st.queryTimeout = QUERY_TIMEOUT_SECONDS
+            chunk.forEachIndexed { index, id -> st.setString(index + 1, id) }
+            st.executeQuery().use { rs ->
+              while (rs.next()) known.add(rs.getString(1))
+            }
+          }
+        }
+        known
+      }
+    } catch (e: Exception) {
+      disable("Error querying known comic ids (source=${prefix})", e)
+      emptySet()
+    }
+  }
+
+  /**
    * Title: the volume title wins, falling back to the work title when blank/NULL.
    * The prefix is whitelisted, so string interpolation here cannot inject SQL.
    */

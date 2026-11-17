@@ -181,6 +181,15 @@ class LibraryContentLifecycle(
               tryRestoreSeries(library, createdSeries, newBooks, deletedSeriesCandidates)
           tryRestoreBooks(library, newBooks)
           if (createdSeries.oneshot) skipMetadataRefreshIds.add(createdSeries.id)
+          // CUSTOM FORK: when the external metadata DB is enabled, refresh the books it knows
+          // right away (title/tags, no archive read). Unknown books are left alone so a 150k
+          // scan never falls back to opening archives.
+          if (comicMetaRepository.isEnabled) {
+            val known = comicMetaRepository.findKnownComicIds(newBooks.map { it.name })
+            if (known.isNotEmpty()) {
+              taskEmitter.refreshBookMetadata(newBooks.filter { it.name in known })
+            }
+          }
           seriesToSortAndRefresh.add(createdSeries)
         } else {
           // if series already exists, update it

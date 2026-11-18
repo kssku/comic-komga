@@ -3,6 +3,49 @@
 > 只写现在真实成立的事。每条结论都标注了取证方式，改动前请重跑一遍
 > scripts/verify-loop.sh（见 [ACCEPTANCE.md](ACCEPTANCE.md)）。
 
+## 0. 2026-11-18 单机自包含改造
+
+三位一体（mangrab + comic_meta + komga）现在**全部跑在 154 这一台机器上**，
+不再依赖 NAS 或任何跨机链路：
+
+| 原来 | 现在 |
+|---|---|
+| 154 → ssh NAS → rsync 写 115 | 154 的 mangrab 直接写本机 CF2 挂载 |
+| 154 → NFS 读 115（需 remount 刷新） | 154 的 CF2 挂载直读 |
+| 154 的 CD2 未挂载（/media 空） | 已挂 /media/115open（rw），150,752 文件可见 |
+| reconcile 83 s（NFS 枚举） | reconcile 46 s（CF2 枚举） |
+
+一圈实测（verify-loop.sh）：
+
+    dispatch 2 本 → drain 36s → metrics → push(skip) → reconcile 46s → scan
+    round finished，全部 PASS，约 82 秒
+
+### CD2 修复要点
+
+登录态本身是好的（oauth refresh-token 成功），真正缺的是 config.toml 里的挂载点声明：
+
+    [[mount_points]]
+    name = "115open"
+    source_path = "/115open"
+    mount_point = "/media/115open"
+    read_only = false
+    auto_mount = true
+
+NAS 的 config.toml 有这段，154 的没有，所以 CF2 启动后 mount manager loaded
+却没有任何挂载动作。
+
+### 自包含后的路径
+
+    115 云盘
+      └── /content/wnacg/oneshots/<bucket>/<id>.cbz
+            ↑                    ↑
+      mangrab 直写          komga 直读
+      archiveDir=           /content 挂载=
+      .../115open/content   .../115open/content
+
+    comic_meta  → 127.0.0.1:55432（本机容器）
+    reconcile   → 直接读 .../115open/content/wnacg/oneshots
+
 ## 1. 部署拓扑
 
 ```text
@@ -101,3 +144,37 @@ Komga book.id = sha1("<相对库根的路径>")
 | 6 | 边车未接 cron | 每圈靠手工 | verify-loop.sh 通过后接 systemd timer |
 
 缺口 1 是「三位一体」真正合体的最后一步：**把元数据送到已经能读内容的那个 Komga 上**。
+
+## 7. 已知代价：Komga 在 NFS 上全量扫描极慢
+
+154 的 Komga 库根已改为 /content/wnacg（容器内），实际落在 /mnt/content（NFS）。实测：
+
+| 操作 | 耗时 |
+|---|---|
+| find 全树 150,749 个文件 | 1.76 s |
+| Komga 首次全量扫描（NFS） | > 45 min（实测仍在跑） |
+| NAS 同库扫描（CF2 直挂） | 3m05s |
+
+原因不是磁盘慢，是元数据路径不同：
+
+- find 用 readdir 批量拿目录项，几乎没有额外 RPC；
+- Komga 的 Files.walkFileTree 对每个文件做多次 stat，NFS 不缓存元数据，
+  每次 stat 一次 RPC（约 4 ms）；
+- CF2 是用户态 FUSE，有本地元数据缓存，所以 NAS 上快一个数量级。
+
+结论：**Komga 不适合跨 NFS 扫全库**。
+
+- 测试机：接受一次性代价，把这次扫完即可；
+- 生产：Komga 与 115 挂载放同一台机器（NAS），不要跨 NFS。
+
+这也意味着：闭环（下载 → 落 115 → 回写 done）**不应该依赖 Komga 扫描**。
+扫描是阅读层的后台动作，不是数据闭环的一环。
+
+## 8. 测试机验收的两级
+
+| 级别 | 内容 | 判据 |
+|---|---|---|
+| L1 数据闭环 | 下载 → rsync → reconcile → DB done | verify-loop.sh 全绿 |
+| L2 阅读层 | Komga 能看到内容 + 标题来自 comic-meta | 抽查 book 的 metadata.title 是真标题 |
+
+L1 每轮可跑（138 s）；L2 是低频验证，不进每轮循环。

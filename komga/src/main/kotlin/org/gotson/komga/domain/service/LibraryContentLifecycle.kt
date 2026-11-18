@@ -44,6 +44,9 @@ import kotlin.time.measureTime
 // CUSTOM FORK: number of scanned series persisted per transaction (see scanRootFolder).
 private const val SCAN_PERSIST_CHUNK = 200
 
+// CUSTOM FORK: 超过这个数量就认为是「首次登记整库」，跳过逐本 stat。
+private const val BULK_INDEX_THRESHOLD = 1000
+
 private val logger = KotlinLogging.logger {}
 
 @Service
@@ -73,10 +76,104 @@ class LibraryContentLifecycle(
   private val eventPublisher: ApplicationEventPublisher,
   private val thumbnailSeriesRepository: ThumbnailSeriesRepository,
 ) {
+
+  // CUSTOM FORK: 名字 diff 扫描，见 [FastLibraryScanner]。无状态，直接实例化。
+  private val fastLibraryScanner = FastLibraryScanner()
+  /**
+   * CUSTOM FORK: 名字 diff 扫描（见 [FastLibraryScanner]）。
+   *
+   * 与全量扫描的区别只有「怎么发现变化」：
+   *   - 全量：walk 每个文件 + stat，再与库比对；
+   *   - 这里：readdir 拿文件名，与库里的 url 比对，只对新增的少数文件 stat。
+   *
+   * 增删语义与全量一致（新文件 → 建 series+book；文件消失 → 软删除），
+   * 但不检测「同名文件内容被替换」——那种情况需要深度扫描。
+   *
+   * @return true 表示已处理完；false 表示不适用，调用方回退全量扫描。
+   */
+  private fun scanByNameDiff(library: Library): Boolean {
+    val lrr = komgaProperties.lrrPathMode
+    if (!lrr.enabled || lrr.oneshotDir.isBlank()) return false
+
+    val root = Paths.get(library.root.toURI())
+    val extensions =
+      buildSet {
+        if (library.scanCbx) addAll(listOf("cbz", "zip", "cbr", "rar"))
+        if (library.scanPdf) add("pdf")
+        if (library.scanEpub) add("epub")
+      }
+
+    val dbIdByUrl =
+      bookRepository
+        .findAllIdAndUrlByLibraryIdNotDeleted(library.id)
+        .associate { it.second to it.first }
+
+    val plan = fastLibraryScanner.planOneshots(root, lrr.oneshotDir, dbIdByUrl, extensions) ?: return false
+    // 首次登记整库（或一次补进来很多）时跳过逐本 stat，见下方注释。
+    val bulkFirstIndex = plan.newPaths.size > BULK_INDEX_THRESHOLD
+    val startedAt = System.nanoTime()
+
+    val createdBooks = mutableListOf<Book>()
+    plan.newPaths.chunked(SCAN_PERSIST_CHUNK).forEach { chunk ->
+      transactionTemplate.executeWithoutResult {
+        chunk.forEach { path ->
+          // 首次登记整库时逐本 stat 会退化成几十万次网络往返，直接按路径构造；
+          // 日常增量只有个位数，stat 一次拿到准确的 size/mtime 更值得。
+          val book =
+            if (bulkFirstIndex) {
+              fileSystemScanner.bookWithoutStat(path, library.root)
+            } else {
+              fileSystemScanner.scanFile(path, library.root) ?: return@forEach
+            }
+          val series =
+            Series(
+              name = book.name,
+              url = book.url,
+              fileLastModified = book.fileLastModified,
+              oneshot = true,
+              libraryId = library.id,
+            )
+          val createdSeries = seriesLifecycle.createSeries(series)
+          val createdBook = book.copy(libraryId = library.id, oneshot = true)
+          seriesLifecycle.addBooks(createdSeries, listOf(createdBook))
+          createdBooks.add(createdBook)
+        }
+      }
+    }
+
+    if (plan.goneBookIds.isNotEmpty()) {
+      val gone = plan.goneBookIds.mapNotNull { bookRepository.findByIdOrNull(it) }
+      if (gone.isNotEmpty()) {
+        bookLifecycle.softDeleteMany(gone)
+        logger.info { "Name-diff scan: soft-deleted ${gone.size} book(s)" }
+      }
+    }
+
+    // 新书若在外置元数据库里已知，立刻刷新标题/标签（不读包）。
+    if (comicMetaRepository.isEnabled && createdBooks.isNotEmpty()) {
+      val known = comicMetaRepository.findKnownComicIds(createdBooks.map { it.name })
+      if (known.isNotEmpty()) {
+        taskEmitter.refreshBookMetadata(createdBooks.filter { it.name in known })
+      }
+    }
+
+    val elapsedMs = (System.nanoTime() - startedAt) / 1_000_000
+    logger.info {
+      "Name-diff scan of library ${library.name}: disk=${plan.diskCount} db=${plan.dbCount} " +
+        "new=${plan.newPaths.size} gone=${plan.goneBookIds.size} in ${elapsedMs} ms"
+    }
+    return true
+  }
+
   fun scanRootFolder(
     library: Library,
     scanDeep: Boolean = false,
   ) {
+    // CUSTOM FORK: 名字 diff 扫描。只 readdir、不逐文件 stat，适用于网络挂载。
+    // 不适用（非 oneshots 布局 / 显式深度扫描）时返回 false，走下面的全量路径。
+    if (!scanDeep && komgaProperties.scan.nameDiffEnabled) {
+      if (scanByNameDiff(library)) return
+    }
     logger.info { "Scan root folder for library: $library" }
     measureTime {
       val scanResult =

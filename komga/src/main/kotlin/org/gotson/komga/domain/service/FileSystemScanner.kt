@@ -22,6 +22,7 @@ import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.attribute.BasicFileAttributes
 import java.nio.file.attribute.FileTime
+import java.time.Instant
 import java.time.LocalDateTime
 import java.time.ZoneId
 import kotlin.io.path.exists
@@ -324,10 +325,10 @@ class FileSystemScanner(
    * 拼接，编码规则与 Path.toUri 一致（URI 构造器做百分号编码）。
    */
   private fun fileUrlFromPath(path: Path): URL =
-    URI("file", null, path.toAbsolutePath().toString(), null).toURL()
+    URI("file", "", path.toAbsolutePath().toString(), null).toURL()
 
   private fun directoryUrlFromPath(path: Path): URL =
-    URI("file", null, path.toAbsolutePath().toString() + "/", null).toURL()
+    URI("file", "", path.toAbsolutePath().toString() + "/", null).toURL()
 
   private fun pathToBook(
     path: Path,
@@ -339,6 +340,27 @@ class FileSystemScanner(
       url = fileUrlFromPath(path),
       fileLastModified = attrs.getUpdatedTime(),
       fileSize = attrs.size(),
+      id = computeBookId(path, libraryRoot),
+    )
+
+  /**
+   * CUSTOM FORK: 构造 Book 但**不 stat**。
+   *
+   * 只用于「一次性把整库登记进索引」的场景：此时 15 万个文件都需要一条记录，
+   * 但我们不关心它们的 size/mtime（name-diff 扫描本来也不检测内容变化）。
+   * 每次都 stat 会让首扫退化成几十次 stat 往返。
+   *
+   * 代价：FILE_SIZE=0、FILE_LAST_MODIFIED=epoch。之后要补齐就跑一次深度扫描。
+   */
+  fun bookWithoutStat(
+    path: Path,
+    libraryRoot: URL? = null,
+  ): Book =
+    Book(
+      name = path.nameWithoutExtension,
+      url = fileUrlFromPath(path),
+      fileLastModified = LocalDateTime.ofInstant(Instant.EPOCH, ZoneId.of("UTC")),
+      fileSize = 0,
       id = computeBookId(path, libraryRoot),
     )
 

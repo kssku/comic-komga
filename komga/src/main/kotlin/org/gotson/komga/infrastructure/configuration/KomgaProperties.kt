@@ -97,6 +97,15 @@ class KomgaProperties {
   // CUSTOM FORK: analyze a book on first page-list access (KOMGA_ANALYSIS_ON_DEMAND).
   var analysis = Analysis()
 
+  // CUSTOM FORK: name-diff scanning, see [org.gotson.komga.domain.service.FastLibraryScanner].
+  // Off by default: it changes how deletions are detected (names instead of full walk),
+  // so it is opt-in per deployment.
+  var scan = Scan()
+
+  class Scan {
+    var nameDiffEnabled: Boolean = false
+  }
+
   class Analysis {
     var onDemand: Boolean = true
 

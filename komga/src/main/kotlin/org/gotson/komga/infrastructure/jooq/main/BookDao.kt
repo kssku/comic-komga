@@ -104,6 +104,15 @@ class BookDao(
     }
   }
 
+  override fun findAllIdAndUrlByLibraryIdNotDeleted(libraryId: String): Collection<Pair<String, String>> =
+    dslRO
+      .select(b.ID, b.URL)
+      .from(b)
+      .where(b.LIBRARY_ID.eq(libraryId))
+      .and(b.DELETED_DATE.isNull)
+      .fetch()
+      .map { it[b.ID] to it[b.URL] }
+
   override fun findAllDeletedByFileSize(fileSize: Long): Collection<Book> =
     dslRO
       .selectFrom(b)

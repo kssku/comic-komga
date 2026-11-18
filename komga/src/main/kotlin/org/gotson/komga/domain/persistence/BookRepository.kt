@@ -27,6 +27,12 @@ interface BookRepository {
     urls: Collection<URL>,
   ): Collection<Book>
 
+  /**
+   * CUSTOM FORK: 名字 diff 扫描只需要 (id, url)，不加载完整 Book 对象。
+   * 15 万本走完整实体反序列化会多占几百 MB，而这里只用两个字符串。
+   */
+  fun findAllIdAndUrlByLibraryIdNotDeleted(libraryId: String): Collection<Pair<String, String>>
+
   fun findAll(
     searchCondition: SearchCondition.Book?,
     searchContext: SearchContext,

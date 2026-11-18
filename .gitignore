@@ -63,3 +63,9 @@ secret/
 
 # 本地测试实例数据目录
 .test-komga/
+
+# 本地运行产物 / agent 工作目录
+.dsh/
+__pycache__/
+*.log.prev.*
+komga-run.log*

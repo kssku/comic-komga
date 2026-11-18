@@ -69,8 +69,8 @@ class BookMetadataAggregationDao(
       ).execute()
 
     metadatas.forEach {
-      dslRW.insertAuthors(it)
-      dslRW.insertTags(it)
+      if (it.authors.isNotEmpty()) dslRW.insertAuthors(it)
+      if (it.tags.isNotEmpty()) dslRW.insertTags(it)
     }
   }
 

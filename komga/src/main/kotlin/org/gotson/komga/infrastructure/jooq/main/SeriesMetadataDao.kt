@@ -114,12 +114,14 @@ class SeriesMetadataDao(
         },
       ).execute()
 
+    // 新建的 metadata 这些集合通常为空；空集合也走一次 SQL 是纯浪费
+    // （15 万本 x 5 次 = 75 万次空语句）。
     metadatas.forEach {
-      dslRW.insertGenres(it)
-      dslRW.insertTags(it)
-      dslRW.insertSharingLabels(it)
-      dslRW.insertLinks(it)
-      dslRW.insertAlternateTitles(it)
+      if (it.genres.isNotEmpty()) dslRW.insertGenres(it)
+      if (it.tags.isNotEmpty()) dslRW.insertTags(it)
+      if (it.sharingLabels.isNotEmpty()) dslRW.insertSharingLabels(it)
+      if (it.links.isNotEmpty()) dslRW.insertLinks(it)
+      if (it.alternateTitles.isNotEmpty()) dslRW.insertAlternateTitles(it)
     }
   }
 

@@ -13,6 +13,7 @@ import org.gotson.komga.infrastructure.sidecar.SidecarBookConsumer
 import org.gotson.komga.infrastructure.sidecar.SidecarSeriesConsumer
 import org.springframework.stereotype.Service
 import java.io.IOException
+import java.net.URI
 import java.net.URL
 import java.nio.file.FileVisitOption
 import java.nio.file.FileVisitResult
@@ -121,7 +122,7 @@ class FileSystemScanner(
             pathToSeries[dir] =
               Series(
                 name = dir.name.ifBlank { dir.pathString },
-                url = dir.toUri().toURL(),
+                url = directoryUrlFromPath(dir),
                 fileLastModified = attrs.getUpdatedTime(),
               )
 
@@ -164,7 +165,7 @@ class FileSystemScanner(
                     val candidate =
                       Series(
                         name = seriesId,
-                        url = seriesDir.toUri().toURL(),
+                        url = directoryUrlFromPath(seriesDir),
                         fileLastModified = attrs.getUpdatedTime(),
                       )
                     lrrSeriesByKey.merge(seriesId, candidate) { current, _ ->
@@ -311,6 +312,23 @@ class FileSystemScanner(
       }
   }
 
+  /**
+   * CUSTOM FORK: 构造 file: URL，**不触发额外的 stat**。
+   *
+   * [java.nio.file.Path.toUri] 内部走 UnixUriUtils.toUri，会 stat 一次来判断
+   * 是否目录（决定要不要补尾斜杠）。在 NFS 这类网络挂载上，这一次 stat 就是
+   * 一次 RPC——15 万个文件就是 15 万次多余往返，实测把全库扫描从分钟级拖到
+   * 小时级（线程栈会停在 UnixNativeDispatcher.stat0）。
+   *
+   * 调用方从 walker 的 attrs 已经知道是文件还是目录，所以这里直接按已知类型
+   * 拼接，编码规则与 Path.toUri 一致（URI 构造器做百分号编码）。
+   */
+  private fun fileUrlFromPath(path: Path): URL =
+    URI("file", null, path.toAbsolutePath().toString(), null).toURL()
+
+  private fun directoryUrlFromPath(path: Path): URL =
+    URI("file", null, path.toAbsolutePath().toString() + "/", null).toURL()
+
   private fun pathToBook(
     path: Path,
     attrs: BasicFileAttributes,
@@ -318,7 +336,7 @@ class FileSystemScanner(
   ): Book =
     Book(
       name = path.nameWithoutExtension,
-      url = path.toUri().toURL(),
+      url = fileUrlFromPath(path),
       fileLastModified = attrs.getUpdatedTime(),
       fileSize = attrs.size(),
       id = computeBookId(path, libraryRoot),

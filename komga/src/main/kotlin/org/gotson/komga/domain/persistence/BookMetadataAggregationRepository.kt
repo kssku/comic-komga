@@ -9,6 +9,9 @@ interface BookMetadataAggregationRepository {
 
   fun insert(metadata: BookMetadataAggregation)
 
+  /** CUSTOM FORK: 批量插入。 */
+  fun insert(metadatas: Collection<BookMetadataAggregation>)
+
   fun update(metadata: BookMetadataAggregation)
 
   fun delete(seriesId: String)

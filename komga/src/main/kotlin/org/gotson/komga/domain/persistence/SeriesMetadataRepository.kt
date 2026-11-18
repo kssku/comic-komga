@@ -9,6 +9,9 @@ interface SeriesMetadataRepository {
 
   fun insert(metadata: SeriesMetadata)
 
+  /** CUSTOM FORK: 批量插入。 */
+  fun insert(metadatas: Collection<SeriesMetadata>)
+
   fun update(metadata: SeriesMetadata)
 
   fun delete(seriesId: String)

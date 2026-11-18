@@ -159,6 +159,24 @@ class SeriesDao(
     )
   }
 
+  override fun insert(series: Collection<Series>) {
+    if (series.isEmpty()) return
+    dslRW
+      .batch(
+        series.map { one ->
+          dslRW
+            .insertInto(s)
+            .set(s.ID, one.id)
+            .set(s.NAME, one.name)
+            .set(s.URL, one.url.toString())
+            .set(s.FILE_LAST_MODIFIED, one.fileLastModified)
+            .set(s.LIBRARY_ID, one.libraryId)
+            .set(s.DELETED_DATE, one.deletedDate)
+            .set(s.ONESHOT, one.oneshot)
+        },
+      ).execute()
+  }
+
   override fun insert(series: Series) {
     dslRW
       .insertInto(s)

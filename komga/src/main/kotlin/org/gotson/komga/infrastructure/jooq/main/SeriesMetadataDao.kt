@@ -80,6 +80,49 @@ class SeriesMetadataDao(
       .map { AlternateTitle(it.label, it.title) }
 
   @Transactional
+  override fun insert(metadatas: Collection<SeriesMetadata>) {
+    if (metadatas.isEmpty()) return
+    dslRW
+      .batch(
+        metadatas.map { it ->
+          dslRW
+            .insertInto(d)
+            .set(d.SERIES_ID, it.seriesId)
+            .set(d.STATUS, it.status.toString())
+            .set(d.TITLE, it.title)
+            .set(d.TITLE_SORT, it.titleSort)
+            .set(d.SUMMARY, it.summary)
+            .set(d.READING_DIRECTION, it.readingDirection?.toString())
+            .set(d.PUBLISHER, it.publisher)
+            .set(d.AGE_RATING, it.ageRating)
+            .set(d.LANGUAGE, it.language)
+            .set(d.STATUS_LOCK, it.statusLock)
+            .set(d.TITLE_LOCK, it.titleLock)
+            .set(d.TITLE_SORT_LOCK, it.titleSortLock)
+            .set(d.SUMMARY_LOCK, it.summaryLock)
+            .set(d.READING_DIRECTION_LOCK, it.readingDirectionLock)
+            .set(d.PUBLISHER_LOCK, it.publisherLock)
+            .set(d.AGE_RATING_LOCK, it.ageRatingLock)
+            .set(d.LANGUAGE_LOCK, it.languageLock)
+            .set(d.GENRES_LOCK, it.genresLock)
+            .set(d.TAGS_LOCK, it.tagsLock)
+            .set(d.TOTAL_BOOK_COUNT, it.totalBookCount)
+            .set(d.TOTAL_BOOK_COUNT_LOCK, it.totalBookCountLock)
+            .set(d.SHARING_LABELS_LOCK, it.sharingLabelsLock)
+            .set(d.LINKS_LOCK, it.linksLock)
+            .set(d.ALTERNATE_TITLES_LOCK, it.alternateTitlesLock)
+        },
+      ).execute()
+
+    metadatas.forEach {
+      dslRW.insertGenres(it)
+      dslRW.insertTags(it)
+      dslRW.insertSharingLabels(it)
+      dslRW.insertLinks(it)
+      dslRW.insertAlternateTitles(it)
+    }
+  }
+
   override fun insert(metadata: SeriesMetadata) {
     dslRW
       .insertInto(d)

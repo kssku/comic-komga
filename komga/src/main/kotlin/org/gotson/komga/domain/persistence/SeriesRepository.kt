@@ -38,6 +38,9 @@ interface SeriesRepository {
 
   fun insert(series: Series)
 
+  /** CUSTOM FORK: 批量插入，走 JDBC batch（SQLite 单条 execute 太慢）。 */
+  fun insert(series: Collection<Series>)
+
   fun update(
     series: Series,
     updateModifiedTime: Boolean = true,

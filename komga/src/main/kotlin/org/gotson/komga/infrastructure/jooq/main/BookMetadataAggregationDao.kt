@@ -54,6 +54,26 @@ class BookMetadataAggregationDao(
       .fetchSet(t.TAG)
 
   @Transactional
+  override fun insert(metadatas: Collection<BookMetadataAggregation>) {
+    if (metadatas.isEmpty()) return
+    dslRW
+      .batch(
+        metadatas.map { it ->
+          dslRW
+            .insertInto(d)
+            .set(d.SERIES_ID, it.seriesId)
+            .set(d.RELEASE_DATE, it.releaseDate)
+            .set(d.SUMMARY, it.summary)
+            .set(d.SUMMARY_NUMBER, it.summaryNumber)
+        },
+      ).execute()
+
+    metadatas.forEach {
+      dslRW.insertAuthors(it)
+      dslRW.insertTags(it)
+    }
+  }
+
   override fun insert(metadata: BookMetadataAggregation) {
     dslRW
       .insertInto(d)

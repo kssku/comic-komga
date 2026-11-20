@@ -465,6 +465,11 @@ class BookController(
         logger.warn(e) { "On-demand analysis failed for book ${book.id}" }
         mediaRepository.findById(book.id)
       }
+      // CUSTOM FORK: the book is being opened, which already costs one archive read.
+      // Use that moment to backfill a missing cover so grids fill in over time without
+      // ever touching the archive from a browsing request.
+      bookLifecycle.generateThumbnailOnRead(book.id)
+
       when (media.status) {
         Media.Status.UNKNOWN -> throw ResponseStatusException(HttpStatus.NOT_FOUND, "Book has not been analyzed yet")
         Media.Status.OUTDATED -> throw ResponseStatusException(

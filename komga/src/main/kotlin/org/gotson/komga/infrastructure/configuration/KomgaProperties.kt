@@ -155,6 +155,14 @@ class KomgaProperties {
    */
   var artworkHashBase: String = ""
 
+  /**
+   * CUSTOM FORK: when true, a cover lookup that misses the mirror tree returns nothing
+   * instead of falling back to listing the book directory (a network round-trip per book on
+   * a FUSE mount). Enable once the mirror tree is fully populated and the library lives on a
+   * metered/remote mount.
+   */
+  var artworkMirrorOnly: Boolean = false
+
   var oauth2AccountCreation: Boolean = false
 
   var oidcEmailVerification: Boolean = true

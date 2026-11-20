@@ -18,6 +18,7 @@ import org.springframework.stereotype.Service
 import java.nio.charset.StandardCharsets
 import java.nio.file.Files
 import java.nio.file.Path
+import java.nio.file.Paths
 import java.security.MessageDigest
 import java.util.concurrent.TimeUnit
 import kotlin.io.path.extension
@@ -94,6 +95,33 @@ class LocalArtworkProvider(
       .expireAfterAccess(6, TimeUnit.HOURS)
       .build<DimensionKey, Dimension>()
 
+  /**
+   * CUSTOM FORK: fail loudly at startup when the mirror is misconfigured.
+   *
+   * A mismatched hash base or a missing mirror root makes EVERY cover lookup miss, and the
+   * only trace used to be a debug log per book. Surfacing it once at boot turns a silent
+   * "no covers anywhere" into an obvious configuration error.
+   */
+  init {
+    val mirrorRoot = komgaProperties.artworkMirrorRoot.trim()
+    val hashBase = komgaProperties.artworkHashBase.trim()
+    when {
+      mirrorRoot.isEmpty() ->
+        logger.info { "Artwork mirror disabled (komga.artwork-mirror-root is empty)" }
+      !Files.isDirectory(Paths.get(mirrorRoot)) ->
+        logger.warn { "Artwork mirror root does not exist: $mirrorRoot - every cover lookup will miss" }
+      hashBase.isEmpty() ->
+        logger.warn {
+          "Artwork mirror root is set but komga.artwork-hash-base is empty: path-addressed lookups are disabled, " +
+            "only legacy book-id shards are used"
+        }
+      else ->
+        logger.info {
+          "Artwork mirror enabled: root=$mirrorRoot hashBase=$hashBase mirrorOnly=" + komgaProperties.artworkMirrorOnly
+        }
+    }
+  }
+
   fun getBookThumbnails(book: Book): List<ThumbnailBook> {
     logger.info { "Looking for local thumbnails for book: $book" }
     val bookPath = book.path
@@ -109,6 +137,11 @@ class LocalArtworkProvider(
 
     val fromMirror = getMirroredBookThumbnails(book)
     if (fromMirror.isNotEmpty()) return fromMirror
+
+    if (komgaProperties.artworkMirrorOnly) {
+      logger.debug { "Artwork mirror only, skipping sidecar listing for book: " + book.id }
+      return emptyList()
+    }
 
     return Files.list(bookPath.parent).use { dirStream ->
       dirStream
@@ -259,6 +292,11 @@ class LocalArtworkProvider(
   fun getSeriesThumbnails(series: Series): List<ThumbnailSeries> {
     if (series.oneshot) {
       logger.debug { "Disabled for oneshot series, skipping" }
+      return emptyList()
+    }
+
+    if (komgaProperties.artworkMirrorOnly) {
+      logger.debug { "Artwork mirror only, skipping sidecar listing for series: " + series.id }
       return emptyList()
     }
 

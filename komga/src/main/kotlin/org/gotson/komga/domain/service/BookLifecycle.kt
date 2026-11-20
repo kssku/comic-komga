@@ -348,14 +348,16 @@ class BookLifecycle(
    * belongs to the low-frequency write paths (add/delete), not to every GET.
    */
   fun getThumbnail(bookId: String): ThumbnailBook? {
-    thumbnailBookRepository.findSelectedByBookIdOrNull(bookId)?.let { return it }
-
-    // CUSTOM FORK: content-addressed mirror lookup (key = sha256 of the book path relative
-    // to komga.artwork-hash-base). I/O is confined to artworkMirrorRoot, which lives outside
-    // the FUSE content subtree, so this costs no remote traffic.
+    // CUSTOM FORK: the content-addressed mirror is the AUTHORITY, not the DB row. A row
+    // recorded during an earlier scan would otherwise shadow every cover placed in the
+    // mirror tree, and that shadowing is silent - the row simply wins.
+    // I/O is confined to artworkMirrorRoot, which lives outside the FUSE content subtree,
+    // so this costs no remote traffic.
     bookRepository.findByIdOrNull(bookId)?.let { book ->
       localArtworkProvider.findMirroredBookThumbnailByPath(book.id, book.path)?.let { return it }
     }
+
+    thumbnailBookRepository.findSelectedByBookIdOrNull(bookId)?.let { return it }
 
     // Legacy id-sharded mirror, for trees written before artworkHashBase existed.
     localArtworkProvider.findMirroredBookThumbnail(bookId)?.let { return it }

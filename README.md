@@ -17,14 +17,18 @@ Komga 是一个漫画、日漫、BD、杂志和电子书媒体服务器。
 | **divina ZIP 零 I/O 枚举** | 去掉逐条目 `getInputStream`，改为按条目名判类型 + 中央目录读尺寸 |
 | **懒缩略图模式** | `KOMGA_THUMBNAIL_MODE=lazy` 关闭入库时自动抽页生成 |
 | **外部 ComicInfo.xml 导入** | 支持读取书本同级目录的 `ComicInfo.xml`（library 级开关） |
+| **封面镜像树** | 封面独立成一棵内容寻址的树（`sha256(相对路径)[:16]` 分片），不占数据库、重建库也在；浏览零流量，打开书籍时自动补全并落盘 |
+| **comic-meta 多源** | 元数据库支持 `wnacg,jm,pica` 多源，按 `book.path` 选表，避免数字 id 跨站串数据 |
+| **LRR 路径模式** | 单行本（`oneshots/`）与系列（`series/<bucket>/<id>/`）按 LRR 布局判定，系列可跨 bucket 聚合 |
 
 完整设计与验证记录见 [`docs/FORK.md`](./docs/FORK.md)。
 
 ## 使用场景
 
-- 库根：`/opt/clouddrive2/115open/content/wnacg`（115 网盘经 CloudDrive2 挂载）。
-  必须填到 `wnacg` 这一层：哈希基准是**库根的父目录**，只有这样相对路径才是 `wnacg/...`
-- 部署：Dell MX Linux，裸 jar 运行，端口 25600
+- 库根：`/content/{站点}`，115 网盘经 CloudDrive2 挂载到 `/content`
+- 部署：Dell 154，docker compose（`/opt/comic-stack`），端口 25600；替换 jar 后需 `docker restart komga`
+- 封面独立存放：`/covers`（本地可写目录），键由漫画相对路径算出，与库布局解耦
+- 元数据：`comic-meta-pg`（PostgreSQL），按 `site/comic_id` 查标题与标签，不打开压缩包
 - 与 LANraragi 挂载同一份数据，两边文件身份互通
 
 ## Features

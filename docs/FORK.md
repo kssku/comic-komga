@@ -34,6 +34,36 @@
 > **注意**：旧文档记载的库根 `.../comic/wnacg/` **在磁盘上已不存在**。
 > `.../comic` 这一层从未存在过。
 
+### 1.2 当前部署（2026-11-20 实测）
+
+| 项 | 值 |
+|---|---|
+| 节点 | Dell 154（`192.168.31.154`），测试机 |
+| 编排 | `/opt/comic-stack/docker-compose.yml`，project `comic-stack` |
+| 容器 | `komga`（eclipse-temurin:21-jre + `/opt/komga-test.jar`）、`comic-meta-pg` |
+| 库挂载 | `/opt/clouddrive2/media:/content:ro`（115 CloudDrive2）|
+| 封面镜像 | `/opt/lab/covers:/covers`（**可写**，生成时落盘）|
+| 配置目录 | `/opt/komga-test/config` |
+| 端口 | 25600 |
+
+**关键启动参数**：
+
+```
+--komga.lrr-path-mode.enabled=true
+--komga.comic-meta.enabled=true
+--komga.comic-meta.source-id=wnacg,jm,pica
+--komga.comic-meta.source-root=/lab
+--komga.artwork-mirror-root=/covers
+--komga.artwork-hash-base=/lab
+--komga.artwork-mirror-only=true
+```
+
+> `source-root` 与 `artwork-hash-base` 必须指向**库根挂载点**。上表是实验环境的 `/lab`，
+> 生产库建在 `/content` 下时改成 `/content`。
+
+> ⚠️ **部署方式**：替换 jar 后必须 `docker restart komga`。`docker compose up -d` 在配置
+> 没有变化时不会重建容器，bind mount 的 jar 换了也不会加载——这个坑踩过一次，整轮验证跑的都是旧代码。
+
 ---
 
 ## 2. 四项改造
@@ -146,6 +176,88 @@ private fun readExternalComicInfo(book: BookWithMedia): ComicInfo? {
 
 外部文件优先于内嵌。测试：31 个全绿（新增 3 个）。
 
+### 2.5 封面镜像树（内容寻址，独立于库）
+
+**提交**：`36149db7`（路径寻址）、`5f1847d1`（镜像优先 + 启动自检 + mirror-only）、`8fbc193f`（生成写镜像）
+
+**问题**：封面没有好地方放。放进漫画目录当 `cover.jpg`——oneshot 库下 Komga 直接跳过 series sidecar
+（`getSeriesThumbnails` 里 `if (series.oneshot) return emptyList()`），32 万本等于白放；
+存进 `THUMBNAIL_BOOK`——BLOB 列，按每本 18 KB 算是 6 GB，塞进 `database.sqlite`，且重建库即全丢。
+
+**解法**：封面独立成一棵镜像树，键从**漫画相对路径**算出来。任何工具只要知道路径就能重算，
+不需要映射表，也就不存在「表与文件不同步」这类问题。
+
+```
+key  = sha256(<artwork-hash-base> 之后的相对路径)[:16]
+封面 = <artwork-mirror-root>/{key[:2]}/{key}.jpg
+```
+
+例：相对路径 `wnacg/oneshots/400001-450000/405530/405530.cbz`
+→ key `fd2f18a53bc6d692` → `covers/fd/fd2f18a53bc6d692.jpg`。256 个分片目录，每片约 1300 张。
+
+**读取顺序**（`BookLifecycle.getThumbnail`）：
+
+1. 镜像树（权威来源）
+2. `THUMBNAIL_BOOK` 表（回退）
+3. 旧 id 分片 `<mirrorRoot>/<bookId 前2字符>/<bookId>.jpg`（兼容旧布局）
+
+三条都未命中且 `thumbnail.generate=false` → 返回空，**不打开压缩包**。
+
+**写入**：`generateThumbnailAndPersist` 生成后**先写镜像**（临时文件 + ATOMIC_MOVE，避免半截文件被读到），
+镜像未配置或不可写才回退数据库 BLOB。打开一本书时会触发这条路径（`AnalyzeBook` 的
+`REFRESH_METADATA` 级联出 `GenerateBookThumbnail`），所以「打开一次就自动补全」是顺带的，
+浏览网格永远不会触发。
+
+**配置**：
+
+| 配置 | 默认 | 说明 |
+|---|---|---|
+| `komga.artwork-mirror-root` | 空（禁用） | 镜像树根。**必须本地文件系统**，不能是 FUSE |
+| `komga.artwork-hash-base` | 空 | 相对路径基准，等于库挂载点，如 `/content` |
+| `komga.artwork-mirror-only` | `false` | true = 未命中不列 book 目录，直接返回空 |
+
+> ⚠️ **两个参数必须成对配置**。`mirror-root` 设了但 `hash-base` 为空，只走旧 id 分片；
+> 基准写错一个字符，整片封面静默 404。启动时会打一行 INFO（正常）或 WARN（配置错），
+> 见 `LocalArtworkProvider` 的 init 块。
+
+> ⚠️ **路径即主键**。bucket 宽度、oneshot 布局、站点目录名，任何一项改了，全部 key 失效。
+> 迁移工具必须同时搬迁封面。
+
+### 2.6 comic-meta 多源（按 book.path 选表）
+
+**提交**：`30690f44`
+
+**问题**：`komga.comic-meta.source-id` 原为单值，查询只看文件名（`WHERE comic_id = ?`）。
+wnacg 与 jm 的数字 id 重叠严重（`1`、`10`、`28411`…），配成 wnacg 时 jm 的书会读到
+**wnacg 那本的标题和 tags** —— 静默串数据，没有任何报错；另两站则永远拿不到元数据。
+
+**解法**：
+
+- `source-id` 支持逗号分隔多值或 `*`：`wnacg,jm,pica`
+- 新增 `komga.comic-meta.source-root`（默认 `/content`），从 `book.path` 第一段解析站点
+- `findBookMetadata` / `findKnownComicIds` 增加 site 维度；扫描时的批量检查按 site 分组，每站一条 `IN (...)`
+- 单值配置下 `siteForPath` 直接返回该源，行为与改造前完全一致
+
+### 2.7 LRR 路径模式：单行本与系列的判定
+
+**测试提交**：`c5a206a1`（`LrrPathModeTest`，7 例，Jimfs 内存文件系统，2.3 秒）
+
+```
+<root>/oneshots/...                      → 单行本，每本一个 series，oneshot=true
+<root>/series/<bucket>/<seriesId>/<vol>  → 系列，同一 seriesId 跨 bucket 聚合为一个
+其他任意路径                              → 父目录 = 一个 series（上游默认行为）
+```
+
+- 单行本判定是「路径中**任意一段**等于 oneshots」，不限于第一层，所以库根填 `/content` 或
+  `/content/wnacg` 都能识别。
+- 系列判定要求 `seriesDir` 之后**恰好两段**（bucket + seriesId）再加文件名。
+  `series/<seriesId>/<vol>` 这种缺 bucket 层的不会被聚合，退回父目录分组。
+- LRR 模式真正的价值是**跨 bucket 聚合**：同一 seriesId 的章节被分散到不同 bucket 时，
+  不开此模式会裂成多个 series。
+
+> ⚠️ 关闭 LRR 模式时走的是 `pathString.contains(oneshotsDir)` —— **字符串包含**，
+> `my-oneshots-archive` 这类目录名也会命中。生产环境保持 LRR 模式开启。
+
 ---
 
 ## 3. 构建与部署
@@ -251,10 +363,10 @@ merge 上游时**必须逐行比对**：
 | 1 | 库根层级待确认（§4）| ⬜ 未结 |
 | 2 | 新旧结构哈希基准需重做 | ⬜ 未做 |
 | 3 | 13 个 lucene 二进制在 `dd058334` 历史中 | ✅ 已决策：接受，不重写历史 |
-| 4 | 外部封面 Provider（见下）| ⬜ 未做 |
+| 4 | 外部封面 Provider（见 §2.5 / §6.1）| ✅ 已实现 |
 | 5 | PR 未开 | ⬜ 未开 |
 
-### 6.1 外部封面 Provider（设计已定，未实现）
+### 6.1 外部封面 Provider（已实现，见 §2.5）
 
 浏览时读独立封面目录，cbz 只在阅读时读。路径规则：
 
@@ -269,6 +381,24 @@ Provider 遇空 `fileHash` **必须返回空**，不得拼出 `/.jpg`。
 
 **分片是硬需求**：FUSE 上单目录十万项会让 `Files.list` 慢到不可用。
 
+### 6.2 原设计的修订（2026-11-20）
+
+上面 6.1 的原始设计用「{封面根}/{book.fileHash}.{ext}」，实现时改成了**路径哈希**：
+
+| | fileHash（原设计） | 路径哈希（实际采用） |
+|---|---|---|
+| 何时可得 | 由 hashAndPersist 异步补，受 library hashFiles 开关控制 | 扫描到路径时同步就能算 |
+| 空值风险 | Provider 必须判空，否则拼出 /.jpg | 不存在空值 |
+| 文件变动 | 内容一变 hash 就变，封面跟着失联 | 路径不变就不变 |
+| 外部工具可用 | 得先查到 book 行才知道 hash | 任何工具拿路径就能重算 |
+
+「分片是硬需求」的结论没变，只是分片键从 id 换成了哈希前两位（256 个分片目录）。
+
+**真正的时序陷阱挪到了别处**：镜像根必须是**本地**文件系统。当年踩过一次——
+book.path 活在 CloudDrive2 的 FUSE provider 里，用它去 resolve 另一个挂载点下的路径，
+isDirectory() 会**不发任何系统调用**直接返回 false，镜像树等于从未被探测。
+现在统一用宿主默认文件系统解析（见 findMirroredBookThumbnail 的注释）。
+
 ---
 
 ## 7. 回退
@@ -282,6 +412,14 @@ Provider 遇空 `fileHash` **必须返回空**，不得拼出 `/.jpg`。
 ---
 
 ## 8. 版本
+
+**1.1** —— 2026-11-20
+
+- 部署迁到 Dell 154，Komga 跑在 `comic-stack` compose 里（§1.2）
+- 新增 §2.5 封面镜像树（内容寻址）、§2.6 comic-meta 多源、§2.7 LRR 路径模式测试
+- 封面生成改为**写镜像树**，不再存 `THUMBNAIL_BOOK` 的 BLOB；镜像优先于数据库行
+- 打开书籍时自动补封面（`AnalyzeBook` → `REFRESH_METADATA` → `GenerateBookThumbnail`），浏览不触发
+- `LrrPathModeTest` 7 例全绿；修好 `SeriesLifecycleTest` 的 MockK 类型推断，测试代码重新可编译
 
 **1.0** —— 2026-10-09
 

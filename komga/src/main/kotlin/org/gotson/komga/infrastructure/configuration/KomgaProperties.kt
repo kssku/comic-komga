@@ -138,6 +138,23 @@ class KomgaProperties {
    */
   var artworkMirrorRoot: String = ""
 
+  /**
+   * CUSTOM FORK: base path used to derive the artwork mirror key from a book path.
+   *
+   * The key is sha256(relative path)[:16], so the cover tree is addressed by CONTENT
+   * (the comic's archive path) instead of by an id that changes whenever the library is
+   * rebuilt or re-imported. Every tool in the project derives the same key from the same
+   * relative path, with no mapping table.
+   *
+   * Example with "/content" as base:
+   *   /content/wnacg/oneshots/400001-450000/405530/405530.cbz
+   *   -> sha256("wnacg/oneshots/400001-450000/405530/405530.cbz")[:16]
+   *   -> <artworkMirrorRoot>/ab/abcdef0123456789.jpg
+   *
+   * Empty (default) keeps the legacy behaviour: key = book id, sharded by its first 2 chars.
+   */
+  var artworkHashBase: String = ""
+
   var oauth2AccountCreation: Boolean = false
 
   var oidcEmailVerification: Boolean = true

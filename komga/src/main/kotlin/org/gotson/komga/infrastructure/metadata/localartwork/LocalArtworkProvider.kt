@@ -15,8 +15,10 @@ import org.gotson.komga.infrastructure.mediacontainer.ContentDetector
 import org.gotson.komga.infrastructure.sidecar.SidecarBookConsumer
 import org.gotson.komga.infrastructure.sidecar.SidecarSeriesConsumer
 import org.springframework.stereotype.Service
+import java.nio.charset.StandardCharsets
 import java.nio.file.Files
 import java.nio.file.Path
+import java.security.MessageDigest
 import java.util.concurrent.TimeUnit
 import kotlin.io.path.extension
 import kotlin.io.path.fileSize
@@ -32,6 +34,15 @@ private val logger = KotlinLogging.logger {}
  * jpg comes first because the cover generator always writes jpg.
  */
 private val shardedCoverExtensions = listOf("jpg", "jpeg", "png", "webp")
+
+/**
+ * CUSTOM FORK: length, in hex characters, of the content-addressed artwork key.
+ * 16 hex = 64 bit: for the ~330k comics in the library the expected number of collisions
+ * is about 3e-9, while keeping paths short.
+ */
+private const val ARTWORK_KEY_LENGTH = 16
+
+private const val HEX_CHARS = "0123456789abcdef"
 
 /**
  * CUSTOM FORK: extensions the Tika MIME repository does not know, mapped explicitly.
@@ -93,6 +104,9 @@ class LocalArtworkProvider(
     // CUSTOM FORK: mirror tree lookup, sharded by book id. Covers live outside the
     // library in <mirrorRoot>/<id[0..1]>/<id>.<ext>, so they are found without ever
     // touching the library layout (which does not exist on this 115 CD2 mount).
+    val fromPathMirror = findMirroredBookThumbnailByPath(book.id, bookPath)?.let { listOf(it) } ?: emptyList()
+    if (fromPathMirror.isNotEmpty()) return fromPathMirror
+
     val fromMirror = getMirroredBookThumbnails(book)
     if (fromMirror.isNotEmpty()) return fromMirror
 
@@ -150,15 +164,58 @@ class LocalArtworkProvider(
    * Returns null when the mirror is disabled, the shard is missing, or no cover file is
    * present. Every failure is logged at debug and swallowed.
    */
-  fun findMirroredBookThumbnail(bookId: String): ThumbnailBook? {
+  /**
+   * CUSTOM FORK: mirror lookup keyed by the book PATH.
+   *
+   * key = sha256(<book path relative to komga.artwork-hash-base>)[:16]
+   *
+   * This is the project-wide identity of a comic: any tool that knows the archive path can
+   * derive the cover location with no mapping table, and the key survives library rebuilds,
+   * id-space changes and re-imports.
+   */
+  fun findMirroredBookThumbnailByPath(bookId: String, bookPath: Path): ThumbnailBook? {
+    val key = artworkKeyFor(bookPath) ?: return null
+    return lookupShardedCover(key, bookId)
+  }
+
+  /**
+   * Legacy lookup keyed by the Komga book id. Kept for mirror trees that predate
+   * [KomgaProperties.artworkHashBase]; new trees should be path-addressed.
+   */
+  fun findMirroredBookThumbnail(bookId: String): ThumbnailBook? = lookupShardedCover(bookId, bookId)
+
+  private fun artworkKeyFor(bookPath: Path): String? {
+    val base = komgaProperties.artworkHashBase.trim().trimEnd('/')
+    if (base.isEmpty()) return null
+
+    val full = bookPath.toString()
+    if (!full.startsWith("$base/")) {
+      logger.debug { "Book path is outside artwork-hash-base, skipping: $full" }
+      return null
+    }
+    val relative = full.substring(base.length + 1)
+
+    val digest = MessageDigest.getInstance("SHA-256").digest(relative.toByteArray(StandardCharsets.UTF_8))
+    val hex =
+      buildString(digest.size * 2) {
+        for (b in digest) {
+          val v = b.toInt() and 0xFF
+          append(HEX_CHARS[v ushr 4])
+          append(HEX_CHARS[v and 0x0F])
+        }
+      }
+    return hex.take(ARTWORK_KEY_LENGTH)
+  }
+
+  private fun lookupShardedCover(key: String, bookId: String): ThumbnailBook? {
     val mirrorRoot = komgaProperties.artworkMirrorRoot.trim()
     if (mirrorRoot.isEmpty()) return null
 
-    if (bookId.length < 2) {
-      logger.debug { "Book id too short for sharded mirror lookup, skipping: $bookId" }
+    if (key.length < 2) {
+      logger.debug { "Cover key too short for sharded mirror lookup, skipping: $key" }
       return null
     }
-    val shard = bookId.substring(0, 2)
+    val shard = key.substring(0, 2)
 
     return try {
       // CUSTOM FORK: resolve on the HOST default filesystem, not on book.path.fileSystem.
@@ -175,7 +232,7 @@ class LocalArtworkProvider(
       val hit =
         shardedCoverExtensions
           .asSequence()
-          .map { shardDir.resolve("$bookId.$it") }
+          .map { shardDir.resolve("$key.$it") }
           .firstOrNull { Files.isRegularFile(it) && contentDetector.isImage(contentDetector.detectMediaType(it)) }
 
       if (hit == null) {

@@ -19,6 +19,7 @@ import java.nio.charset.StandardCharsets
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
+import java.nio.file.StandardCopyOption
 import java.security.MessageDigest
 import java.util.concurrent.TimeUnit
 import kotlin.io.path.extension
@@ -217,7 +218,7 @@ class LocalArtworkProvider(
    */
   fun findMirroredBookThumbnail(bookId: String): ThumbnailBook? = lookupShardedCover(bookId, bookId)
 
-  private fun artworkKeyFor(bookPath: Path): String? {
+  fun artworkKeyFor(bookPath: Path): String? {
     val base = komgaProperties.artworkHashBase.trim().trimEnd('/')
     if (base.isEmpty()) return null
 
@@ -238,6 +239,42 @@ class LocalArtworkProvider(
         }
       }
     return hex.take(ARTWORK_KEY_LENGTH)
+  }
+
+  /**
+   * CUSTOM FORK: write a generated cover into the mirror tree, addressed by the same
+   * content key used for lookups.
+   *
+   * This replaces storing the bytes in THUMBNAIL_BOOK: the mirror file is the single source
+   * of truth for covers, survives library rebuilds, and stays readable by any other tool
+   * that can compute the same path hash.
+   *
+   * Returns the written path, an existing path, or null when the mirror is not configured,
+   * not writable, or the book path is outside the hash base. The caller falls back to the
+   * database row on null.
+   */
+  fun persistMirroredCover(bookPath: Path, bytes: ByteArray): Path? {
+    val mirrorRoot = komgaProperties.artworkMirrorRoot.trim()
+    if (mirrorRoot.isEmpty() || bytes.isEmpty()) return null
+    val key = artworkKeyFor(bookPath) ?: return null
+
+    return try {
+      val shardDir = Paths.get(mirrorRoot).resolve(key.substring(0, 2))
+      Files.createDirectories(shardDir)
+      val target = shardDir.resolve("$key.jpg")
+      if (Files.isRegularFile(target)) return target
+
+      // Atomic: a half-written cover must never be served, and a reader may be probing
+      // this exact path from another thread.
+      val tmp = shardDir.resolve("$key.jpg.tmp")
+      Files.write(tmp, bytes)
+      Files.move(tmp, target, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING)
+      logger.info { "Persisted generated cover into the mirror tree: $target (" + bytes.size + " bytes)" }
+      target
+    } catch (e: Exception) {
+      logger.warn(e) { "Could not persist generated cover into the mirror tree for key $key" }
+      null
+    }
   }
 
   private fun lookupShardedCover(key: String, bookId: String): ThumbnailBook? {
@@ -273,7 +310,7 @@ class LocalArtworkProvider(
         return null
       }
 
-      logger.info { "Found sharded mirrored cover: $hit" }
+      logger.debug { "Found sharded mirrored cover: $hit" }
       ThumbnailBook(
         url = hit.toUri().toURL(),
         type = ThumbnailBook.Type.SIDECAR,

@@ -266,7 +266,16 @@ class BookLifecycle(
   fun generateThumbnailAndPersist(book: Book) {
     logger.info { "Generate thumbnail and persist for book: $book" }
     try {
-      addThumbnailForBook(bookAnalyzer.generateThumbnail(BookWithMedia(book, mediaRepository.findById(book.id))), MarkSelectedPreference.IF_NONE_OR_GENERATED)
+      val thumbnail = bookAnalyzer.generateThumbnail(BookWithMedia(book, mediaRepository.findById(book.id)))
+      // CUSTOM FORK: the content-addressed mirror tree is the source of truth for covers.
+      // Writing the file keeps THUMBNAIL_BOOK small (no BLOB per book), survives library
+      // rebuilds and stays readable by any tool that can compute the same path hash.
+      // Falling back to the database row keeps read-only deployments working.
+      val bytes = thumbnail.thumbnail
+      val written = if (bytes != null && bytes.isNotEmpty()) localArtworkProvider.persistMirroredCover(book.path, bytes) else null
+      if (written == null) {
+        addThumbnailForBook(thumbnail, MarkSelectedPreference.IF_NONE_OR_GENERATED)
+      }
     } catch (ex: NoThumbnailFoundException) {
       logger.error { "Error while creating thumbnail" }
     } catch (ex: Exception) {
@@ -437,39 +446,6 @@ class BookLifecycle(
     }
 
     return null
-  }
-
-  /**
-   * CUSTOM FORK: backfill a missing cover at the moment the book is actually opened.
-   *
-   * Opening a book already reads the archive (page list analysis / page streaming), so
-   * extracting the first page for a cover costs no additional remote traffic. Browsing the
-   * grid must never trigger this, which is why it is NOT wired into the thumbnail endpoints
-   * and `komga.thumbnail.generate` stays false.
-   *
-   * Fire-and-forget: the page request must not wait for the archive read. Reuses the same
-   * single-flight map and failure cache as the lazy generator.
-   */
-  fun generateThumbnailOnRead(bookId: String) {
-    if (komgaProperties.thumbnailMode != KomgaProperties.ThumbnailMode.LAZY) return
-    // Already resolvable (mirror tree or a stored row): nothing to backfill.
-    if (getThumbnail(bookId) != null) return
-    if (thumbnailFailureCache.getIfPresent(bookId) != null) return
-
-    val mine = CompletableFuture<ByteArray?>()
-    if (inflightThumbnailGenerations.putIfAbsent(bookId, mine) != null) return
-
-    CompletableFuture.runAsync {
-      try {
-        tryGenerateThumbnail(bookId)
-      } catch (e: Throwable) {
-        thumbnailFailureCache.put(bookId, System.currentTimeMillis())
-        logger.debug(e) { "On-read thumbnail generation failed for book " + bookId }
-      } finally {
-        inflightThumbnailGenerations.remove(bookId, mine)
-        mine.complete(null)
-      }
-    }
   }
 
   /**

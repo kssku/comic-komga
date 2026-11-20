@@ -8,13 +8,12 @@
 
 ## 它在这个栈里的位置
 
-```
-comic-mangrab  ── 下载/打包 ──▶  /content/{site}/oneshots/...  ◀── 扫描/阅读 ──  comic-komga（本仓库）
-                                       ▲
-comic-database ── 元数据 ──▶  comic-meta-pg (PostgreSQL)  ◀── 标题/标签 ──┘
-
-本机封面镜像  /covers/{key[:2]}/{key}.jpg  ◀── 按需生成/批量铺 ──┘
-```
+| 组件 | 角色 |
+|---|---|
+| **comic-komga**（本仓库） | 扫描并阅读那棵归档树 |
+| `comic-mangrab` | 下载、打包，落成 `/content/{site}/oneshots/{bucket}/{id}/{id}.cbz` |
+| `comic-database` + `comic-meta-pg` | 提供标题与标签，按 `site/comic_id` 查，不打开压缩包 |
+| `/covers` | 封面镜像，键由漫画相对路径算出（见下） |
 
 上游假设漫画在本地磁盘上。这里的数据在 115 网盘上，经 FUSE 挂载：**每次 stat 都是一次网络往返**，
 单个目录可能有十万个文件。所有改造都是围绕这一点。

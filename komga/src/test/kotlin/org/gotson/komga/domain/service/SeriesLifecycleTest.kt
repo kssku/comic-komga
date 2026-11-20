@@ -8,7 +8,9 @@ import io.mockk.verify
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.catchThrowable
 import org.gotson.komga.domain.model.BookMetadata
+import org.gotson.komga.domain.model.BookMetadataAggregation
 import org.gotson.komga.domain.model.Dimension
+import org.gotson.komga.domain.model.SeriesMetadata
 import org.gotson.komga.domain.model.Media
 import org.gotson.komga.domain.model.ThumbnailBook
 import org.gotson.komga.domain.model.ThumbnailSeries
@@ -174,7 +176,7 @@ class SeriesLifecycleTest(
     fun `given series when saving and an exception occur while saving metadata then series is not saved`() {
       // given
       val series = makeSeries(name = "series", libraryId = library.id)
-      every { seriesMetadataRepository.insert(any()) } throws DataAccessException("")
+      every { seriesMetadataRepository.insert(any<SeriesMetadata>()) } throws DataAccessException("")
 
       // when
       val thrown = catchThrowable { seriesLifecycle.createSeries(series) }
@@ -190,7 +192,7 @@ class SeriesLifecycleTest(
     fun `given series when saving and an exception occur while saving metadata aggregation then series is not saved`() {
       // given
       val series = makeSeries(name = "series", libraryId = library.id)
-      every { bookMetadataAggregationRepository.insert(any()) } throws DataAccessException("")
+      every { bookMetadataAggregationRepository.insert(any<BookMetadataAggregation>()) } throws DataAccessException("")
 
       // when
       val thrown = catchThrowable { seriesLifecycle.createSeries(series) }

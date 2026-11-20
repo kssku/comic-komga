@@ -5,6 +5,7 @@ import org.gotson.komga.domain.model.BookMetadataPatch
 import org.springframework.beans.factory.DisposableBean
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Service
+import java.nio.file.Path
 import java.sql.Connection
 import java.sql.DriverManager
 import java.util.concurrent.atomic.AtomicBoolean
@@ -48,18 +49,37 @@ class ComicMetaRepository(
   @param:Value("\${komga.comic-meta.db-url:}") private val dbUrl: String = "",
   @param:Value("\${komga.comic-meta.db-user:}") private val dbUser: String = "",
   @param:Value("\${komga.comic-meta.db-password:}") private val dbPassword: String = "",
-  // Semantically this is now the TABLE NAME PREFIX of the source (jm / pica / wnacg),
-  // not a value in a `source_id` column. Validated against a whitelist before use.
+  // CUSTOM FORK: TABLE NAME PREFIXES of the sources, comma-separated, or "*" for all known.
+  // Multi-source is required for a library tree holding wnacg + jm + pica side by side:
+  // numeric comic ids overlap heavily between wnacg and jm, so a single prefix silently
+  // returns the WRONG work's title and tags for every id collision.
   @param:Value("\${komga.comic-meta.source-id:wnacg}") private val sourceId: String = DEFAULT_SOURCE_ID,
+  // CUSTOM FORK: root the library tree is mounted at, used to derive the source of a book
+  // from its path ("<root>/<source>/oneshots/..."). Empty disables path-based source lookup.
+  @param:Value("\${komga.comic-meta.source-root:/content}") private val sourceRoot: String = DEFAULT_SOURCE_ROOT,
   // Injectable so tests can drive the retry path without sleeping. Tune the default
   // (currently 60s) if recovery latency after a temporary outage matters more than log noise.
   @param:Value("\${komga.comic-meta.retry-cooldown-ms:60000}") private val retryCooldownMs: Long = RETRY_COOLDOWN_MS,
 ) : DisposableBean {
-  /** Table prefix, or null when [sourceId] is not whitelisted (lookups then stay disabled). */
-  private val tablePrefix: String? = sourceId.trim().lowercase().takeIf { it in TABLE_PREFIXES }
+  /** Whitelisted table prefixes; empty means lookups stay disabled. */
+  private val tablePrefixes: Set<String> =
+    sourceId
+      .split(",")
+      .map { it.trim().lowercase() }
+      .filter { it in TABLE_PREFIXES || it == ALL_SOURCES }
+      .let { configured ->
+        when {
+          configured.isEmpty() -> emptySet()
+          ALL_SOURCES in configured -> TABLE_PREFIXES
+          else -> configured.toSet()
+        }
+      }
+
+  /** True when more than one source is configured, i.e. a book path is needed to pick a table. */
+  private val multiSource: Boolean = tablePrefixes.size > 1
 
   @Volatile
-  private var enabled: Boolean = enabledByConfig && dbUrl.isNotBlank() && tablePrefix != null
+  private var enabled: Boolean = enabledByConfig && dbUrl.isNotBlank() && tablePrefixes.isNotEmpty()
 
   /** CUSTOM FORK: whether lookups are live, so callers can decide to request metadata refresh. */
   val isEnabled: Boolean
@@ -81,9 +101,9 @@ class ComicMetaRepository(
 
   init {
     when {
-      tablePrefix == null ->
+      tablePrefixes.isEmpty() ->
         logger.error {
-          "ComicMeta source-id '$sourceId' is not one of $TABLE_PREFIXES, metadata lookups disabled"
+          "ComicMeta source-id '$sourceId' is not one of $TABLE_PREFIXES (or '*'), metadata lookups disabled"
         }
       !enabledByConfig ->
         logger.info { "ComicMeta database not enabled (komga.comic-meta.enabled=false), disabled" }
@@ -91,7 +111,9 @@ class ComicMetaRepository(
         logger.info { "ComicMeta database URL not configured, disabled" }
       else ->
         // never log the URL verbatim: it may carry credentials in the userinfo part
-        logger.info { "ComicMeta database enabled: source=$tablePrefix (url host hidden)" }
+        logger.info {
+          "ComicMeta database enabled: sources=$tablePrefixes, source-root='$sourceRoot' (url host hidden)"
+        }
     }
   }
 
@@ -104,7 +126,6 @@ class ComicMetaRepository(
     synchronized(lock) {
       connection?.let { return it }
       if (!enabled) return null
-      val prefix = tablePrefix ?: return null
       return try {
         val conn = DriverManager.getConnection(dbUrl, dbUser, dbPassword)
         try {
@@ -116,10 +137,10 @@ class ComicMetaRepository(
           conn.close()
           throw e
         }
-        logger.debug { "ComicMeta connected, table prefix=$prefix" }
+        logger.debug { "ComicMeta connected, table prefixes=$tablePrefixes" }
         conn.also { connection = it }
       } catch (e: Exception) {
-        disable("Could not open ComicMeta database (source=$prefix)", e)
+        disable("Could not open ComicMeta database (sources=$tablePrefixes)", e)
         null
       }
     }
@@ -145,7 +166,7 @@ class ComicMetaRepository(
     if (enabled) return true
     // misconfiguration (bad source-id / disabled / no URL) is never retried:
     // the timestamp gate below would otherwise hammer a database we must not touch
-    if (!enabledByConfig || dbUrl.isBlank() || tablePrefix == null) return false
+    if (!enabledByConfig || dbUrl.isBlank() || tablePrefixes.isEmpty()) return false
     val failedAt = lastFailureAt
     if (failedAt == 0L) {
       // enabled but never failed: nothing to cool down, the reconnect is allowed now
@@ -153,7 +174,7 @@ class ComicMetaRepository(
         if (!enabled) {
           enabled = true
           if (retryWarned.compareAndSet(false, true)) {
-            logger.warn { "ComicMeta connection retry armed (source=$tablePrefix)" }
+            logger.warn { "ComicMeta connection retry armed (sources=$tablePrefixes)" }
           }
         }
         enabled
@@ -166,7 +187,7 @@ class ComicMetaRepository(
       if (enabled) return true
       enabled = true
       if (retryWarned.compareAndSet(false, true)) {
-        logger.warn { "ComicMeta database cooldown elapsed, retrying connection (source=$tablePrefix)" }
+        logger.warn { "ComicMeta database cooldown elapsed, retrying connection (sources=$tablePrefixes)" }
       }
       return true
     }
@@ -191,9 +212,42 @@ class ComicMetaRepository(
    *   matching `{p}_volumes.comic_id`
    * @return patch with title/tags, or null when the book is unknown or DB disabled
    */
+  /**
+   * CUSTOM FORK: resolve the source (table prefix) of a book from its path.
+   *
+   * "<sourceRoot>/<source>/..." -> "<source>", when that source is configured.
+   * Returns null when only one source is configured (nothing to resolve), when path-based
+   * lookup is unavailable, or when the first segment is not a configured source.
+   */
+  fun siteForPath(bookPath: Path): String? {
+    if (!multiSource) return tablePrefixes.firstOrNull()
+    val root = sourceRoot.trim().trimEnd('/')
+    if (root.isEmpty()) return null
+    val full = bookPath.toString()
+    if (!full.startsWith("$root/")) return null
+    val first = full.substring(root.length + 1).substringBefore('/').lowercase()
+    return first.takeIf { it in tablePrefixes }
+  }
+
+  private fun singleSourceOrNull(): String? = if (!multiSource) tablePrefixes.firstOrNull() else null
+
+  /**
+   * Single-source convenience overload; returns null when several sources are configured,
+   * because the id alone cannot tell which table to read.
+   */
   fun findBookMetadata(comicId: String): BookMetadataPatch? {
+    val prefix = singleSourceOrNull() ?: return null
+    return findBookMetadata(prefix, comicId)
+  }
+
+  /**
+   * Look up title and tags for a book in one specific source.
+   * @param site table prefix (jm / pica / wnacg), must be one of the configured sources
+   * @param comicId book file name without extension, matching `{site}_volumes.comic_id`
+   */
+  fun findBookMetadata(site: String, comicId: String): BookMetadataPatch? {
     if (!retryAllowedNow()) return null
-    val prefix = tablePrefix ?: return null
+    val prefix = site.trim().lowercase().takeIf { it in tablePrefixes } ?: return null
     return try {
       synchronized(lock) {
         val conn = connection() ?: return null
@@ -226,9 +280,22 @@ class ComicMetaRepository(
    * ids, so only the known ones get a metadata refresh task (and never fall back to opening
    * the archive).
    */
+  /**
+   * Single-source convenience overload; returns an empty set when several sources are
+   * configured, because the ids alone cannot tell which table to read.
+   */
   fun findKnownComicIds(comicIds: Collection<String>): Set<String> {
+    val prefix = singleSourceOrNull() ?: return emptySet()
+    return findKnownComicIds(prefix, comicIds)
+  }
+
+  /**
+   * CUSTOM FORK: batch existence check for ONE source.
+   * @param site table prefix (jm / pica / wnacg), must be one of the configured sources
+   */
+  fun findKnownComicIds(site: String, comicIds: Collection<String>): Set<String> {
     if (comicIds.isEmpty() || !retryAllowedNow()) return emptySet()
-    val prefix = tablePrefix ?: return emptySet()
+    val prefix = site.trim().lowercase().takeIf { it in tablePrefixes } ?: return emptySet()
     return try {
       synchronized(lock) {
         val conn = connection() ?: return emptySet()
@@ -311,7 +378,12 @@ class ComicMetaRepository(
     /** Source prefixes present in the PostgreSQL metadata database. Anything else is rejected. */
     val TABLE_PREFIXES = setOf("jm", "pica", "wnacg")
 
+    /** Wildcard accepted in `source-id` to mean every known source. */
+    const val ALL_SOURCES = "*"
+
     const val DEFAULT_SOURCE_ID = "wnacg"
+
+    const val DEFAULT_SOURCE_ROOT = "/content"
 
     /** Default cooldown before a disabled repository may retry; tune via config or constructor. */
     const val RETRY_COOLDOWN_MS = 60_000L

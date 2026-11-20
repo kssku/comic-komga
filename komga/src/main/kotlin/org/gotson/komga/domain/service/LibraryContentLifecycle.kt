@@ -209,7 +209,14 @@ class LibraryContentLifecycle(
 
     // 新书若在外置元数据库里已知，立刻刷新标题/标签（不读包）。
     if (comicMetaRepository.isEnabled && createdBooks.isNotEmpty()) {
-      val known = comicMetaRepository.findKnownComicIds(createdBooks.map { it.name })
+      // CUSTOM FORK: ids are only unique within a source, so group by the source derived
+      // from the book path before querying. Single-source setups collapse to one group.
+      val known =
+        createdBooks
+          .groupBy { comicMetaRepository.siteForPath(it.path) }
+          .flatMap { (site, books) ->
+            if (site == null) emptyList() else comicMetaRepository.findKnownComicIds(site, books.map { book -> book.name }).toList()
+          }.toSet()
       if (known.isNotEmpty()) {
         taskEmitter.refreshBookMetadata(createdBooks.filter { it.name in known })
       }
@@ -347,7 +354,12 @@ class LibraryContentLifecycle(
           // right away (title/tags, no archive read). Unknown books are left alone so a 150k
           // scan never falls back to opening archives.
           if (comicMetaRepository.isEnabled) {
-            val known = comicMetaRepository.findKnownComicIds(newBooks.map { it.name })
+            val known =
+              newBooks
+                .groupBy { comicMetaRepository.siteForPath(it.path) }
+                .flatMap { (site, books) ->
+                  if (site == null) emptyList() else comicMetaRepository.findKnownComicIds(site, books.map { book -> book.name }).toList()
+                }.toSet()
             if (known.isNotEmpty()) {
               taskEmitter.refreshBookMetadata(newBooks.filter { it.name in known })
             }

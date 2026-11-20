@@ -54,7 +54,10 @@ class ComicInfoProvider(
     // Prefer the external comic metadata database when configured: it provides
     // title and tags WITHOUT opening the book archive, so metadata refresh never
     // triggers a download from the cloud drive. Falls back to the embedded XML.
-    comicMetaRepository.findBookMetadata(book.book.name)?.let { return it }
+    val site = comicMetaRepository.siteForPath(book.book.path)
+    val fromMeta =
+      if (site != null) comicMetaRepository.findBookMetadata(site, book.book.name) else comicMetaRepository.findBookMetadata(book.book.name)
+    fromMeta?.let { return it }
 
     getComicInfo(book)?.let { comicInfo ->
       val releaseDate =
@@ -142,7 +145,9 @@ class ComicInfoProvider(
     // Komga series name (it holds the author or the scanlation group). Use the external
     // comic-meta title instead, which costs no archive read.
     if (book.book.oneshot) {
-      comicMetaRepository.findBookMetadata(book.book.name)?.title?.let { title ->
+      val site = comicMetaRepository.siteForPath(book.book.path)
+      val meta = if (site != null) comicMetaRepository.findBookMetadata(site, book.book.name) else comicMetaRepository.findBookMetadata(book.book.name)
+      meta?.title?.let { title ->
         return SeriesMetadataPatch(
           title = title,
           titleSort = title,

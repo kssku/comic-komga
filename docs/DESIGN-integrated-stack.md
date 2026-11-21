@@ -1,8 +1,11 @@
 # 三位一体集成架构（Mangrab + comic_meta + Komga）
 
-> 状态：**已实现**（2026-11-21）。115 上 150,759 本全部扁平落盘，
-> Komga 扫描 90 秒入库（150,759 books / 150,759 oneshot series），封面命中 147,177。
-> 路径权威定义见 `comic-mangrab` 仓库的 `docs/ARCHIVE.md`，本文不再重复。
+> ⚠️ **已被取代**（2026-11-21）：项目总标准现在在
+> [`comic-mangrab/docs/PROJECT.md`](https://github.com/kssku/comic-mangrab/blob/master/docs/PROJECT.md)。
+> 数据契约、路径规范、接口与流程一律以它为准；本文仅作为集成演进的历史记录保留。
+>
+> 历史状态：已实现（2026-11-21）。115 上 150,759 本全部扁平落盘，Komga 扫描 90 秒入库
+> （150,759 books / 150,759 oneshot series），封面命中 147,177。
 > 相关：`DESIGN-lrr-komga-storage-alignment.md`（Komga 侧的 LRR 路径模式）
 
 ## 1. 三套系统与它们的现状

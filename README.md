@@ -1,5 +1,7 @@
 # Komga（个人独立分支）
 
+> **三位一体项目总标准见 [comic-mangrab/docs/PROJECT.md](https://github.com/kssku/comic-mangrab/blob/master/docs/PROJECT.md)** —— 本仓库只是其中一环。
+
 > 为 **115 网盘 / CloudDrive2 FUSE 挂载** 场景改造的 Komga。
 > 读一棵三站（wnacg / jm / pica）归档树，封面走独立的本地镜像，元数据来自 PostgreSQL。
 >

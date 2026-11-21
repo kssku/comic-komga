@@ -123,7 +123,13 @@ class TaskHandler(
           is Task.RefreshSeriesMetadata ->
             seriesRepository.findByIdOrNull(task.seriesId)?.let { series ->
               seriesMetadataLifecycle.refreshMetadata(series)
-              taskEmitter.aggregateSeriesMetadata(series.id, priority = task.priority)
+              // CUSTOM FORK: a oneshot series holds exactly one book, and its aggregation row is
+              // written together with the book (LibraryContentLifecycle.bulkInsertOneshots), so
+              // re-aggregating rewrites the same numbers. On a first ingest of 190k books this
+              // DOUBLED the task count (190k extra tasks, each one write transaction on the single
+              // SQLite writer) with zero visible effect. Multi-book series still aggregate,
+              // because their counts really do change when a book's metadata is refreshed.
+              if (!series.oneshot) taskEmitter.aggregateSeriesMetadata(series.id, priority = task.priority)
             } ?: logger.warn { "Cannot execute task $task: Series does not exist" }
 
           is Task.AggregateSeriesMetadata ->

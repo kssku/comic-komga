@@ -17,6 +17,15 @@ logging:
 komga:
   database:
     file: \${komga.config-dir}/database.sqlite
+    # CUSTOM FORK: the SQLite write path is a single connection (journal-mode WAL forces the
+    # write pool to 1). With the driver default `synchronous=FULL` every commit fsyncs, so a
+    # metadata refresh took 500-800ms and 16 task threads queued behind one HikariCP connection:
+    # a full rescan produced hundreds of thousands of tasks and took days.
+    # NORMAL keeps WAL crash consistency for the database file, and the library itself is
+    # rebuildable from the archive tree, so the traded durability is acceptable here.
+    # Override with --komga.database.pragmas.synchronous=FULL if you disagree.
+    pragmas:
+      synchronous: NORMAL
   lucene:
     data-directory: \${komga.config-dir}/lucene
   fonts:

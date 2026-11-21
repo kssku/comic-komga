@@ -106,6 +106,16 @@ class KomgaProperties {
     var nameDiffEnabled: Boolean = false
   }
 
+  // CUSTOM FORK: guard rail for the library-wide buttons.
+  //
+  // "Analyze library" and "Refresh all metadata" iterate EVERY book of the library. On this
+  // deployment a library holds 150k books living on a 115/CloudDrive2 mount, and an analysis
+  // reads each archive from the cloud: pressing the button once would pull ~1.3 TB and enqueue
+  // ~150k tasks behind a single SQLite writer. The actions are still available (they are
+  // legitimate on small libraries), but above this size they are refused with an explicit
+  // message instead of quietly melting the box.
+  var bulkActionLimit: Int = 5000
+
   class Analysis {
     var onDemand: Boolean = true
 

@@ -49,6 +49,7 @@ import java.io.FileNotFoundException
 @RequestMapping("api/v1/libraries", produces = [MediaType.APPLICATION_JSON_VALUE])
 @Tag(name = OpenApiConfiguration.TagNames.LIBRARIES)
 class LibraryController(
+  private val komgaProperties: org.gotson.komga.infrastructure.configuration.KomgaProperties,
   private val taskEmitter: TaskEmitter,
   private val libraryLifecycle: LibraryLifecycle,
   private val libraryRepository: LibraryRepository,
@@ -161,6 +162,23 @@ class LibraryController(
     library: LibraryUpdateDto,
   ) {
     libraryRepository.findByIdOrNull(libraryId)?.let { existing ->
+      // CUSTOM FORK: two library switches make the next scan read EVERY book in full:
+      // hashFiles (whole archive) and analyzeDimensions (image headers). On a large library on a
+      // cloud mount that is tens of GB of traffic per scan from one accidental toggle.
+      val bookCount by lazy { bookRepository.findAllIdsByLibraryId(libraryId).size }
+      fun refuseExpensiveToggle(enabled: Boolean?, currently: Boolean, what: String) {
+        if (enabled == true && !currently && bookCount > komgaProperties.bulkActionLimit) {
+          throw ResponseStatusException(
+            HttpStatus.CONFLICT,
+            "Refusing to enable $what on a library with $bookCount books (limit " +
+              "${komgaProperties.bulkActionLimit}): the next scan would read every archive. " +
+              "Raise komga.bulk-action-limit if this is intended.",
+          )
+        }
+      }
+      refuseExpensiveToggle(library.hashFiles, existing.hashFiles, "file hashing")
+      refuseExpensiveToggle(library.analyzeDimensions, existing.analyzeDimensions, "dimension analysis")
+
       val toUpdate =
         with(library) {
           existing.copy(
@@ -260,6 +278,8 @@ class LibraryController(
           SearchContext.empty(),
           Pageable.unpaged(),
         ).content
+    // CUSTOM FORK: analysis reads every archive — on a cloud mount that is terabytes of traffic.
+    refuseOversizedBulkAction(books.size, "analyze every book of this library")
     taskEmitter.analyzeBook(books, HIGH_PRIORITY, force = true)
   }
 
@@ -277,9 +297,31 @@ class LibraryController(
           SearchContext.empty(),
           Pageable.unpaged(),
         ).content
+    // CUSTOM FORK: three tasks per book (metadata + book artwork + series artwork) behind a single
+    // SQLite writer; above the configured size this is hours of pointless queue churn.
+    refuseOversizedBulkAction(books.size, "refresh the metadata of every book of this library")
     taskEmitter.refreshBookMetadata(books, priority = HIGH_PRIORITY)
     taskEmitter.refreshBookLocalArtwork(books, priority = HIGH_PRIORITY)
     taskEmitter.refreshSeriesLocalArtwork(seriesRepository.findAllIdsByLibraryId(libraryId), priority = HIGH_PRIORITY)
+  }
+
+  /**
+   * CUSTOM FORK: see [org.gotson.komga.infrastructure.configuration.KomgaProperties.bulkActionLimit].
+   * Returns 409 with an actionable message rather than silently enqueueing a six-figure task storm.
+   */
+  private fun refuseOversizedBulkAction(
+    count: Int,
+    action: String,
+  ) {
+    val limit = komgaProperties.bulkActionLimit
+    if (count > limit) {
+      throw ResponseStatusException(
+        HttpStatus.CONFLICT,
+        "Refusing to $action: it would affect $count books, over the limit of $limit. " +
+          "This is a library-wide action on a large library; scope it down, or raise " +
+          "komga.bulk-action-limit if you really mean it.",
+      )
+    }
   }
 
   @PostMapping("{libraryId}/empty-trash")

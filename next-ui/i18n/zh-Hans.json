@@ -227,6 +227,9 @@
   "40HXjy": {
     "defaultMessage": "取消"
   },
+  "42E/dM": {
+    "defaultMessage": "单行本"
+  },
   "464rk3": {
     "defaultMessage": "选择系列"
   },
@@ -328,6 +331,9 @@
   },
   "6eAECF": {
     "defaultMessage": "库"
+  },
+  "6f8q+L": {
+    "defaultMessage": "多卷"
   },
   "6nCIPn": {
     "defaultMessage": "类型"
@@ -1012,6 +1018,9 @@
   },
   "PvKF7E": {
     "defaultMessage": "库已删除：{library}"
+  },
+  "Q3XcC5": {
+    "defaultMessage": "全部"
   },
   "Q7tJAG": {
     "defaultMessage": "阅读列表"

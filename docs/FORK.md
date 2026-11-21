@@ -18,7 +18,20 @@ fork 自己维护迁移，时间戳可能与稍后进入的上游迁移交错（
 因此 `application.yml` 默认开了 `spring.flyway.out-of-order: true`，任务库的 Flyway
 （`FlywayTasksMigrationInitializer`）也跟着这个开关走。全新安装不受影响。
 
-### 0.2 单行本 / 多卷切换（已在新结构上重做）
+### 0.2 单行本的两层元数据（book / series）保持同步
+
+Komga 把单行本建模成「只有一本书的系列」，于是同一部作品有两行元数据：`SERIES_METADATA` 和
+`BOOK_METADATA`。列表在单行本模式显示书名、在系列模式显示系列名，书详情页又把系列元数据当作
+「单行本属性」——两边任改一处，另一处就会陈旧，同一部作品出现两个标题。
+
+`OneShotMetadataLifecycle` 在用户编辑后把 title / summary / tags 镜像到另一层：
+
+- `PATCH /api/v1/series/{id}/metadata` → 同步到它唯一的那本书
+- `PATCH /api/v1/books/{id}/metadata`（含批量）→ 同步到系列（同时把 titleSort 设成标题）
+- 只对 `oneshot=true` 且**恰好一本书**的系列生效；多卷系列完全不动
+- 不同步 locks、编号、出版日期、阅读方向等分层字段
+
+### 0.3 单行本 / 多卷切换（已在新结构上重做）
 
 `next-ui/src/pages/libraries/[viewId]/series.vue` 在官方 1.30 的
 `ItemBrowser` 结构上重新实现了 LANraragi 式的三分切换（All / Series / One-shots）：

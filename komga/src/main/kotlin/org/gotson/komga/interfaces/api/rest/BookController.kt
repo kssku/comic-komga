@@ -35,6 +35,7 @@ import org.gotson.komga.domain.persistence.ReadListRepository
 import org.gotson.komga.domain.persistence.ThumbnailBookRepository
 import org.gotson.komga.domain.service.BookAnalyzer
 import org.gotson.komga.domain.service.BookLifecycle
+import org.gotson.komga.domain.service.OneShotMetadataLifecycle
 import org.gotson.komga.infrastructure.image.ImageAnalyzer
 import org.gotson.komga.infrastructure.mediacontainer.ContentDetector
 import org.gotson.komga.infrastructure.openapi.OpenApiConfiguration
@@ -102,6 +103,7 @@ private val logger = KotlinLogging.logger {}
 @RequestMapping(produces = [MediaType.APPLICATION_JSON_VALUE])
 class BookController(
   private val taskEmitter: TaskEmitter,
+  private val oneShotMetadataLifecycle: OneShotMetadataLifecycle,
   private val bookAnalyzer: BookAnalyzer,
   private val bookLifecycle: BookLifecycle,
   private val bookRepository: BookRepository,
@@ -687,6 +689,10 @@ class BookController(
     val updated = existing.patch(newMetadata)
     bookMetadataRepository.update(updated)
 
+    // CUSTOM FORK: a one-shot is a series + one book; mirror the edit to the series layer so the
+    // two lists never disagree.
+    oneShotMetadataLifecycle.syncSeriesFromBook(bookId)
+
     bookRepository.findByIdOrNull(bookId)?.let { updatedBook ->
       taskEmitter.aggregateSeriesMetadata(updatedBook.seriesId)
       updatedBook.let { eventPublisher.publishEvent(DomainEvent.BookUpdated(it)) }
@@ -715,6 +721,8 @@ class BookController(
 
     updatedBooks.forEach { eventPublisher.publishEvent(DomainEvent.BookUpdated(it)) }
     updatedBooks.map { it.seriesId }.distinct().forEach { taskEmitter.aggregateSeriesMetadata(it) }
+    // CUSTOM FORK: mirror bulk edits of one-shot books to their series layer too.
+    updatedBooks.forEach { oneShotMetadataLifecycle.syncSeriesFromBook(it.id) }
   }
 
   @Operation(summary = "Mark book's read progress", description = "Mark book as read and/or change page progress.", tags = [OpenApiConfiguration.TagNames.BOOKS])

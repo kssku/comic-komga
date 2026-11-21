@@ -40,6 +40,7 @@ import org.gotson.komga.domain.persistence.SeriesMetadataRepository
 import org.gotson.komga.domain.persistence.SeriesRepository
 import org.gotson.komga.domain.persistence.ThumbnailSeriesRepository
 import org.gotson.komga.domain.service.BookLifecycle
+import org.gotson.komga.domain.service.OneShotMetadataLifecycle
 import org.gotson.komga.domain.service.SeriesLifecycle
 import org.gotson.komga.infrastructure.image.ImageAnalyzer
 import org.gotson.komga.infrastructure.mediacontainer.ContentDetector
@@ -104,6 +105,7 @@ private val logger = KotlinLogging.logger {}
 @RequestMapping("api", produces = [MediaType.APPLICATION_JSON_VALUE])
 class SeriesController(
   private val taskEmitter: TaskEmitter,
+  private val oneShotMetadataLifecycle: OneShotMetadataLifecycle,
   private val seriesRepository: SeriesRepository,
   private val seriesLifecycle: SeriesLifecycle,
   private val seriesMetadataRepository: SeriesMetadataRepository,
@@ -739,6 +741,10 @@ class SeriesController(
         )
       }
     seriesMetadataRepository.update(updated)
+
+    // CUSTOM FORK: a one-shot's single book carries the title the one-shot list shows; mirror the
+    // series edit down so both layers stay in step.
+    oneShotMetadataLifecycle.syncBookFromSeries(seriesId)
 
     seriesRepository.findByIdOrNull(seriesId)?.let { eventPublisher.publishEvent(DomainEvent.SeriesUpdated(it)) }
   } ?: throw ResponseStatusException(HttpStatus.NOT_FOUND)

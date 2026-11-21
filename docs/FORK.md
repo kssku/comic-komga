@@ -197,9 +197,11 @@ key  = sha256(<artwork-hash-base> 之后的相对路径)[:16]
 
 **读取顺序**（`BookLifecycle.getThumbnail`）：
 
-1. 镜像树（权威来源）
-2. `THUMBNAIL_BOOK` 表（回退）
-3. 旧 id 分片 `<mirrorRoot>/<bookId 前2字符>/<bookId>.jpg`（兼容旧布局）
+1. `THUMBNAIL_BOOK` 里**用户产生**的选中行（`USER_UPLOADED` / `SIDECAR`）——用户意图优先，
+   否则网页上「上传封面 / 选为封面」会被镜像里的生成图无声覆盖
+2. 镜像树（生成封面的权威来源）
+3. `THUMBNAIL_BOOK` 表里剩下的行（`GENERATED`，回退）
+4. 旧 id 分片 `<mirrorRoot>/<bookId 前2字符>/<bookId>.jpg`（兼容旧布局）
 
 三条都未命中且 `thumbnail.generate=false` → 返回空，**不打开压缩包**。
 

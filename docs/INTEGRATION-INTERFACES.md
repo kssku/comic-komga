@@ -6,13 +6,16 @@
 ## 0. 时序一眼
 
 ```
-Mangrab 下载 → 目录 {site}/{comic_id}/{order}/图片 → 导出 {order}.cbz（含 ComicInfo.xml + 元数据.json）
-   ├─ 写 115（经 CloudDrive2 挂载点）
-   ├─ （缺）写 comic_meta：volumes 元数据 / archive.state
-   └─ （缺）通知 Komga 扫描
+Mangrab 下载 → 临时目录 {site}/{comic_id}/{order}/图片（工作区，非归档）
+   → 打包并落 115（经 CloudDrive2 挂载点）：
+        单本  {site}/oneshots/{bucket}/{comic_id}.cbz
+        多话  {site}/series/{bucket}/{comic_id}/{order}.cbz
+   ├─ 写 comic_meta：volumes 元数据 / archive.state        （待接）
+   └─ 通知 Komga 扫描                                      （待接）
 
 Komga 扫描 /content/<site> → book.name = comic_id
-   └─ 读 comic_meta（只读，按 comic_id）→ 标题/标签，不打开压缩包
+   ├─ 读 comic_meta（只读，按 comic_id）→ 标题/标签，不打开压缩包
+   └─ 封面读本地镜像树 /covers（sha256 路径哈希），不碰 115 FUSE
 ```
 
 ## 1. comic_meta（PostgreSQL 16）

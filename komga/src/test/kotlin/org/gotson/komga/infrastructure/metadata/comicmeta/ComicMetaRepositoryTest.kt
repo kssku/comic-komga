@@ -9,6 +9,7 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import java.nio.file.Path
 import java.sql.Connection
 import java.sql.DriverManager
 import java.sql.PreparedStatement
@@ -240,5 +241,60 @@ class ComicMetaRepositoryTest {
     repo().findBookMetadata("13748")
 
     verify { setSessionStmt.execute("SET TRANSACTION READ ONLY") }
+  }
+
+  // --- isComicMetaManaged: the guard that keeps a missing DB row from opening the archive ---
+
+  @Test
+  fun `given book under source root when managed check then it is owned by comic-meta`() {
+    // no JDBC at all: the guard is configuration-only on purpose
+    assertThat(repo().isComicMetaManaged(Path.of("/content/wnacg/oneshots/1-50000/13748.cbz"))).isTrue()
+  }
+
+  @Test
+  fun `given book outside source root when managed check then it is not owned`() {
+    assertThat(repo().isComicMetaManaged(Path.of("/elsewhere/wnacg/oneshots/13748.cbz"))).isFalse()
+  }
+
+  @Test
+  fun `given unknown first segment when managed check then it is not owned`() {
+    assertThat(repo().isComicMetaManaged(Path.of("/content/unknown/oneshots/13748.cbz"))).isFalse()
+  }
+
+  @Test
+  fun `given single source configured when managed check then segment still has to match`() {
+    val r = repo(source = "wnacg")
+    assertThat(r.isComicMetaManaged(Path.of("/content/wnacg/oneshots/13748.cbz"))).isTrue()
+    assertThat(r.isComicMetaManaged(Path.of("/content/jm/oneshots/13748.cbz"))).isFalse()
+  }
+
+  @Test
+  fun `given authoritative disabled when managed check then nothing is owned`() {
+    val r =
+      ComicMetaRepository(
+        enabledByConfig = true,
+        dbUrl = url,
+        dbUser = user,
+        dbPassword = pass,
+        sourceId = "*",
+        authoritative = false,
+      )
+    assertThat(r.isComicMetaManaged(Path.of("/content/wnacg/oneshots/13748.cbz"))).isFalse()
+  }
+
+  @Test
+  fun `given repository disabled by config when managed check then nothing is owned`() {
+    assertThat(repo(enabled = false).isComicMetaManaged(Path.of("/content/wnacg/oneshots/13748.cbz"))).isFalse()
+  }
+
+  @Test
+  fun `given database unreachable when managed check then the book is still owned`() {
+    // deliberately no working connection: connection health must NOT re-enable archive reads,
+    // otherwise a DB outage turns into one cloud download per book
+    mockkStatic(DriverManager::class)
+    every { DriverManager.getConnection(url, user, pass) } throws SQLException("connection refused")
+    val r = repo(cooldown = 3_600_000L)
+    assertThat(r.findBookMetadata("13748")).isNull()
+    assertThat(r.isComicMetaManaged(Path.of("/content/wnacg/oneshots/13748.cbz"))).isTrue()
   }
 }

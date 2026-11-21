@@ -42,6 +42,10 @@ class ComicInfoProviderTest {
       // ComicMetaRepository is external-DB backed: null means "not available", which keeps the
       // pre-existing test intent (embedded ComicInfo.xml is the only metadata source).
       every { it.findBookMetadata(any()) } returns null
+      // no path-based source resolution in these tests: the single-source overload is enough
+      every { it.siteForPath(any()) } returns null
+      // not managed by comic-meta -> the embedded xml fallback must still be reachable
+      every { it.isComicMetaManaged(any()) } returns false
     }
 
   private val comicInfoProvider = ComicInfoProvider(mockMapper, mockAnalyzer, isbnValidator, mockComicMetaRepository)
@@ -540,7 +544,11 @@ class ComicInfoProviderTest {
     }
 
     private val mockComicMetaRepository =
-      mockk<ComicMetaRepository>().also { every { it.findBookMetadata(any()) } returns null }
+      mockk<ComicMetaRepository>().also {
+        every { it.findBookMetadata(any()) } returns null
+        every { it.siteForPath(any()) } returns null
+        every { it.isComicMetaManaged(any()) } returns false
+      }
 
     private val realProvider = ComicInfoProvider(XmlMapper(), mockAnalyzer, isbnValidator, mockComicMetaRepository)
 

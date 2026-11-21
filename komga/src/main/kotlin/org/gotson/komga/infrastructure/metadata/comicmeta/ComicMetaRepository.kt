@@ -60,6 +60,12 @@ class ComicMetaRepository(
   // Injectable so tests can drive the retry path without sleeping. Tune the default
   // (currently 60s) if recovery latency after a temporary outage matters more than log noise.
   @param:Value("\${komga.comic-meta.retry-cooldown-ms:60000}") private val retryCooldownMs: Long = RETRY_COOLDOWN_MS,
+  // CUSTOM FORK: when true, books under [sourceRoot] whose source is configured are OWNED by the
+  // comic-meta database. If the database does not know a book, Komga must NOT fall back to opening
+  // the archive (on a 115/CloudDrive2 FUSE mount that means downloading the whole CBZ from the
+  // cloud just to read one XML entry). Set false only for a mixed tree where books without a
+  // comic-meta row still need their embedded ComicInfo.xml.
+  @param:Value("\${komga.comic-meta.authoritative:true}") private val authoritative: Boolean = true,
 ) : DisposableBean {
   /** Whitelisted table prefixes; empty means lookups stay disabled. */
   private val tablePrefixes: Set<String> =
@@ -227,6 +233,35 @@ class ComicMetaRepository(
     if (!full.startsWith("$root/")) return null
     val first = full.substring(root.length + 1).substringBefore('/').lowercase()
     return first.takeIf { it in tablePrefixes }
+  }
+
+  /**
+   * CUSTOM FORK: strict source resolution used by [isComicMetaManaged].
+   *
+   * Unlike [siteForPath] it ALSO requires the path to live under [sourceRoot], and it works for a
+   * single configured source too — "the first segment is not a configured source" must not be
+   * silently reported as the only source when we are about to skip opening the archive.
+   */
+  private fun managedSourceForPath(bookPath: Path): String? {
+    val root = sourceRoot.trim().trimEnd('/')
+    if (root.isEmpty()) return null
+    val full = bookPath.toString()
+    if (!full.startsWith("$root/")) return null
+    return full.substring(root.length + 1).substringBefore('/').lowercase().takeIf { it in tablePrefixes }
+  }
+
+  /**
+   * CUSTOM FORK: true when this book is OWNED by the comic-meta database, i.e. metadata must be
+   * taken from the database alone and the archive must never be opened for a missing row.
+   *
+   * Deliberately does NOT consult [enabled] / [retryAllowedNow]: an unreachable database is
+   * exactly the moment we must not trigger a cloud download per book. Configuration decides, not
+   * connection health.
+   */
+  fun isComicMetaManaged(bookPath: Path): Boolean {
+    if (!authoritative) return false
+    if (!enabledByConfig || dbUrl.isBlank() || tablePrefixes.isEmpty()) return false
+    return managedSourceForPath(bookPath) != null
   }
 
   private fun singleSourceOrNull(): String? = if (!multiSource) tablePrefixes.firstOrNull() else null

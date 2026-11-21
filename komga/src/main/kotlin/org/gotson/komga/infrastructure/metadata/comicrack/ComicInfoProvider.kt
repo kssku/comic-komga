@@ -59,6 +59,12 @@ class ComicInfoProvider(
       if (site != null) comicMetaRepository.findBookMetadata(site, book.book.name) else comicMetaRepository.findBookMetadata(book.book.name)
     fromMeta?.let { return it }
 
+    // CUSTOM FORK: the comic-meta database owns this book (path under its root, known source) but
+    // has no row for it. Do NOT fall back to the archive: reading one XML entry out of a CBZ on a
+    // 115/CloudDrive2 FUSE mount downloads the whole file from the cloud, which is exactly the
+    // storm that made a full rescan take days. An unknown book keeps the metadata it already has.
+    if (comicMetaRepository.isComicMetaManaged(book.book.path)) return null
+
     getComicInfo(book)?.let { comicInfo ->
       val releaseDate =
         comicInfo.year?.let {
@@ -147,6 +153,7 @@ class ComicInfoProvider(
     if (book.book.oneshot) {
       val site = comicMetaRepository.siteForPath(book.book.path)
       val meta = if (site != null) comicMetaRepository.findBookMetadata(site, book.book.name) else comicMetaRepository.findBookMetadata(book.book.name)
+      if (meta == null && comicMetaRepository.isComicMetaManaged(book.book.path)) return null
       meta?.title?.let { title ->
         return SeriesMetadataPatch(
           title = title,

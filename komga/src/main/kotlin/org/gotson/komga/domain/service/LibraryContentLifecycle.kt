@@ -9,6 +9,7 @@ import org.gotson.komga.domain.model.BookMetadataAggregation
 import org.gotson.komga.domain.model.SeriesMetadata
 import org.gotson.komga.infrastructure.search.LuceneEntity
 import org.gotson.komga.infrastructure.search.SearchIndexLifecycle
+import org.gotson.komga.domain.model.BookMetadataPatch
 import org.gotson.komga.domain.model.BookMetadataPatchCapability
 import org.gotson.komga.domain.model.DirectoryNotFoundException
 import org.gotson.komga.domain.model.DomainEvent
@@ -51,7 +52,7 @@ import java.time.LocalDateTime
 import kotlin.time.measureTime
 
 // CUSTOM FORK: number of scanned series persisted per transaction (see scanRootFolder).
-private const val SCAN_PERSIST_CHUNK = 200
+private const val SCAN_PERSIST_CHUNK = 1000
 
 // CUSTOM FORK: 超过这个数量就认为是「首次登记整库」，跳过逐本 stat。
 private const val BULK_INDEX_THRESHOLD = 1000
@@ -106,17 +107,40 @@ class LibraryContentLifecycle(
    * 副作用保留：事件仍然逐本发布（搜索索引与 SSE 依赖它），
    * 只是 DB 写入合并成批量。
    */
-  private fun bulkInsertOneshots(pairs: List<Pair<Series, Book>>) {
+  /**
+   * CUSTOM FORK (performance): metadata for a chunk of books, in one database round-trip.
+   *
+   * All books in a chunk come from the same library, hence the same source, so their file names
+   * cannot collide across sources (numeric ids DO overlap between wnacg and jm).
+   */
+  private fun fetchMetaForChunk(books: List<Book>): Map<String, BookMetadataPatch> {
+    if (!comicMetaRepository.isEnabled || books.isEmpty()) return emptyMap()
+    val site = books.firstNotNullOfOrNull { comicMetaRepository.siteForPath(it.path) } ?: return emptyMap()
+    return comicMetaRepository.findBookMetadataBatch(site, books.map { it.name })
+  }
+
+  private fun bulkInsertOneshots(
+    pairs: List<Pair<Series, Book>>,
+    // CUSTOM FORK (performance): metadata for these books, fetched in bulk from comic_meta.
+    // Writing it here (inside the same bulk transaction) replaces one refresh TASK per book —
+    // each of which is its own write transaction on SQLite's single writer.
+    metaByName: Map<String, BookMetadataPatch> = emptyMap(),
+  ) {
     if (pairs.isEmpty()) return
     val seriesList = pairs.map { it.first }
     val books = pairs.map { (series, book) -> book.copy(seriesId = series.id) }
+
+    fun titleOf(book: Book): String = metaByName[book.name]?.title ?: book.name
 
     transactionTemplate.executeWithoutResult {
       // 全部走批量：SQLite 下单条 execute 约 3 ms/条，15 万本 x 6 张表
       // 就是几十万次往返；批量后压到一次往返（每 200 本一批）。
       seriesRepository.insert(seriesList)
       seriesMetadataRepository.insert(
-        seriesList.map { SeriesMetadata(title = it.name, titleSort = it.name, seriesId = it.id) },
+        seriesList.map {
+          val title = metaByName[it.name]?.title ?: it.name
+          SeriesMetadata(title = title, titleSort = title, seriesId = it.id)
+        },
       )
       bookMetadataAggregationRepository.insert(
         seriesList.map { BookMetadataAggregation(seriesId = it.id) },
@@ -126,9 +150,10 @@ class LibraryContentLifecycle(
       bookMetadataRepository.insert(
         books.map {
           BookMetadata(
-            title = it.name,
+            title = titleOf(it),
             number = it.number.toString(),
             numberSort = it.number.toFloat(),
+            tags = metaByName[it.name]?.tags ?: emptySet(),
             bookId = it.id,
           )
         },
@@ -180,6 +205,8 @@ class LibraryContentLifecycle(
     val startedAt = System.nanoTime()
 
     val createdBooks = mutableListOf<Book>()
+    // Names whose title/tags were written together with the book; they need no refresh task.
+    val enriched = mutableSetOf<String>()
     plan.newPaths.chunked(SCAN_PERSIST_CHUNK).forEach { chunk ->
       val pairs =
         chunk.mapNotNull { path ->
@@ -203,7 +230,10 @@ class LibraryContentLifecycle(
         }
 
       if (bulkFirstIndex) {
-        bulkInsertOneshots(pairs)
+        // One PG round-trip per 200 books instead of 200 refresh tasks afterwards.
+        val metaByName = fetchMetaForChunk(pairs.map { it.second })
+        bulkInsertOneshots(pairs, metaByName)
+        enriched.addAll(pairs.map { it.second.name })
       } else {
         // 日常增量：走 lifecycle，保留它的全部副作用（事件、索引、统计）。
         transactionTemplate.executeWithoutResult {
@@ -234,8 +264,11 @@ class LibraryContentLifecycle(
           .flatMap { (site, books) ->
             if (site == null) emptyList() else comicMetaRepository.findKnownComicIds(site, books.map { book -> book.name }).toList()
           }.toSet()
-      if (known.isNotEmpty()) {
-        taskEmitter.refreshBookMetadata(createdBooks.filter { it.name in known })
+      // Books enriched during the bulk insert already carry title+tags; enqueueing a refresh for
+      // them would redo the same work one task (one transaction) at a time.
+      val pending = createdBooks.filter { it.name in known && it.name !in enriched }
+      if (pending.isNotEmpty()) {
+        taskEmitter.refreshBookMetadata(pending)
       }
     }
 

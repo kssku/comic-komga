@@ -354,6 +354,74 @@ class ComicMetaRepository(
   }
 
   /**
+   * CUSTOM FORK (performance): batch title+tags for many comic ids in ONE query.
+   *
+   * The scanner used to enqueue one metadata refresh task per new book. On a first ingest that is
+   * 190k tasks, and every task is a write transaction on SQLite's single write connection — the
+   * dominant cost of a from-zero build. Since the database already owns the whole metadata for a
+   * book, it can be fetched in bulk here and written together with the book itself.
+   *
+   * @return map of comicId -> patch; ids absent from the database are simply missing from the map
+   */
+  fun findBookMetadataBatch(
+    site: String,
+    comicIds: Collection<String>,
+  ): Map<String, BookMetadataPatch> {
+    if (comicIds.isEmpty() || !retryAllowedNow()) return emptyMap()
+    val prefix = site.trim().lowercase().takeIf { it in tablePrefixes } ?: return emptyMap()
+    return try {
+      synchronized(lock) {
+        val conn = connection() ?: return emptyMap()
+        val out = LinkedHashMap<String, BookMetadataPatch>()
+        comicIds.chunked(500).forEach { chunk ->
+          val placeholders = chunk.joinToString(",") { "?" }
+          val sql =
+            """
+            SELECT v.comic_id,
+                   COALESCE(NULLIF(v.title, ''), w.title) AS title,
+                   string_agg(t.name, chr(31)) AS tags
+              FROM ${prefix}_volumes v
+              LEFT JOIN ${prefix}_works w ON w.work_id = v.work_id
+              LEFT JOIN ${prefix}_work_tags wt ON wt.work_id = v.work_id
+              LEFT JOIN ${prefix}_tags t ON t.id = wt.tag_id
+             WHERE v.comic_id IN ($placeholders)
+             GROUP BY v.comic_id, COALESCE(NULLIF(v.title, ''), w.title)
+            """.trimIndent()
+          conn.prepareStatement(sql).use { st ->
+            st.queryTimeout = QUERY_TIMEOUT_SECONDS
+            chunk.forEachIndexed { index, id -> st.setString(index + 1, id) }
+            st.executeQuery().use { rs ->
+              while (rs.next()) {
+                val id = rs.getString(1) ?: continue
+                val title = rs.getString(2)?.trim()?.ifBlank { null }
+                val tags =
+                  rs.getString(3)
+                    ?.split('\u001f')
+                    ?.map { it.trim() }
+                    ?.filter { it.isNotEmpty() }
+                    ?.toSet()
+                    ?.ifEmpty { null }
+                if (title != null || tags != null) {
+                  out[id] = BookMetadataPatch(title = title, tags = tags)
+                }
+              }
+            }
+          }
+        }
+        if (recoveryPending.compareAndSet(true, false)) {
+          failureLogged.set(false)
+          retryWarned.set(false)
+          logger.info { "ComicMeta database recovered, queries re-enabled (source=$prefix)" }
+        }
+        out
+      }
+    } catch (e: Exception) {
+      disable("Error batch-querying ComicMeta (source=$prefix)", e)
+      emptyMap()
+    }
+  }
+
+  /**
    * Title: the volume title wins, falling back to the work title when blank/NULL.
    * The prefix is whitelisted, so string interpolation here cannot inject SQL.
    */

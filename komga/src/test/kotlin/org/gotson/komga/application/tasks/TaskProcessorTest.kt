@@ -12,10 +12,15 @@ import org.gotson.komga.domain.service.BookLifecycle
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
+import org.springframework.test.context.TestPropertySource
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 
 @SpringBootTest
+// CUSTOM FORK: this fork adds komga.analysis.on-demand (default true, so scheduled analysis does
+// not open archives on a FUSE mount). With it on, TaskHandler skips queued AnalyzeBook tasks,
+// which is exactly what this test asserts DOES happen — turn it off for this context.
+@TestPropertySource(properties = ["komga.analysis.on-demand=false"])
 class TaskProcessorTest(
   @Autowired private val taskEmitter: TaskEmitter,
   @Autowired private val taskProcessor: TaskProcessor,

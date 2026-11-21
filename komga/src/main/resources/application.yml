@@ -33,6 +33,12 @@ komga:
   config-dir: \${user.home}/.komga
   tasks-db:
     file: \${komga.config-dir}/tasks.sqlite
+    # CUSTOM FORK: the task QUEUE is its own SQLite database with its own single write
+    # connection. Same fsync trap as the main DB: with FULL, every task insert/delete fsyncs,
+    # and a first-time ingest of 190k books queues ~570k tasks — 15 of 16 task threads end up
+    # parked in HikariPool while one thread holds the connection (500-700ms/task, days to drain).
+    pragmas:
+      synchronous: NORMAL
 
   # comic-meta: external PostgreSQL metadata DB (read-only).
   # MIGRATION: `db-path` (SQLite) is REMOVED. The PG schema is not flat:

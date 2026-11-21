@@ -31,23 +31,36 @@ class TasksDao(
   TasksRepository {
   private val t = Tables.TASK
 
-  private val tasksAvailableCondition =
-    t.OWNER.isNull
-      .and(
-        t.GROUP_ID
-          .notIn(
-            DSL
-              .select(t.GROUP_ID)
-              .from(t)
-              .where(t.OWNER.isNotNull)
-              .and(t.GROUP_ID.isNotNull),
-          ).or(t.GROUP_ID.isNull),
-      )
+  /**
+   * CUSTOM FORK: the set of `GROUP_ID`s currently being processed.
+   *
+   * Upstream inlines this as a correlated `NOT IN (SELECT ...)` inside the polling query.
+   * With a deep queue (~570k rows during a first ingest) SQLite cannot use any index for the
+   * ordering and sorts the WHOLE table on every poll (~400ms), which serialises the 16 worker
+   * threads on the single write connection. Pulling the blocked groups out first keeps that
+   * query tiny (it walks idx__tasks__owner_group_id), and leaves the main poll as
+   * `WHERE OWNER IS NULL AND (...)` + `ORDER BY PRIORITY DESC, LAST_MODIFIED_DATE LIMIT 1`,
+   * which the new idx__tasks__queue index serves directly.
+   */
+  private fun blockedGroupIds(): List<String> =
+    dslRO
+      .selectDistinct(t.GROUP_ID)
+      .from(t)
+      .where(t.OWNER.isNotNull.and(t.GROUP_ID.isNotNull))
+      .fetch(t.GROUP_ID)
+      .filterNotNull()
+
+  private fun tasksAvailableCondition(blockedGroups: List<String>) =
+    if (blockedGroups.isEmpty()) {
+      t.OWNER.isNull
+    } else {
+      t.OWNER.isNull.and(t.GROUP_ID.isNull.or(t.GROUP_ID.notIn(blockedGroups)))
+    }
 
   override fun hasAvailable(): Boolean =
     dslRO.fetchExists(
       t,
-      tasksAvailableCondition,
+      tasksAvailableCondition(blockedGroupIds()),
     )
 
   @Transactional
@@ -55,7 +68,7 @@ class TasksDao(
     val task =
       dslRW
         .selectBase()
-        .where(tasksAvailableCondition)
+        .where(tasksAvailableCondition(blockedGroupIds()))
         .orderBy(t.PRIORITY.desc(), t.LAST_MODIFIED_DATE)
         .limit(1)
         .fetchOne()

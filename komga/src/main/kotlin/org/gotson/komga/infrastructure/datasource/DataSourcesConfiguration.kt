@@ -3,10 +3,12 @@ package org.gotson.komga.infrastructure.datasource
 import com.zaxxer.hikari.HikariConfig
 import com.zaxxer.hikari.HikariDataSource
 import org.gotson.komga.infrastructure.configuration.KomgaProperties
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.boot.jdbc.DataSourceBuilder
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.context.annotation.Primary
+import org.springframework.session.jdbc.config.annotation.SpringSessionDataSource
 import org.sqlite.SQLiteConfig
 import org.sqlite.SQLiteDataSource
 import javax.sql.DataSource
@@ -48,6 +50,15 @@ class DataSourcesConfiguration(
     else
       tasksDataSourceRW()
 
+  @ConditionalOnProperty(
+    value = ["komga.jdbc-session-enabled"],
+    havingValue = "true",
+    matchIfMissing = false,
+  )
+  @Bean("sessionsDataSource")
+  @SpringSessionDataSource
+  fun sessionsDataSource(): DataSource = buildDataSource("SqliteSessionsPool", SQLiteDataSource::class.java, komgaProperties.sessionsDb)
+
   private fun buildDataSource(
     poolName: String,
     dataSourceClass: Class<out SQLiteDataSource>,
@@ -55,14 +66,11 @@ class DataSourcesConfiguration(
   ): HikariDataSource {
     val extraPragmas =
       databaseProps.pragmas.let {
-        if (it.isEmpty())
+        if (it.isEmpty()) {
           ""
-        else
-          // The db file may already carry a query string (e.g. "file::memory:?cache=shared");
-          // appending another "?" would merge the pragmas into that parameter's value and
-          // SQLite fails with "no such access mode".
-          (if (databaseProps.file.contains("?")) "&" else "?") +
-            it.map { (key, value) -> "$key=$value" }.joinToString(separator = "&")
+        } else {
+          (if (databaseProps.file.contains("?")) "&" else "?") + it.map { (key, value) -> "$key=$value" }.joinToString(separator = "&")
+        }
       }
 
     val dataSource =

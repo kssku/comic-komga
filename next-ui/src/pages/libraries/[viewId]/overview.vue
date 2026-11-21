@@ -82,13 +82,25 @@ import { useDisplay } from 'vuetify'
 import ReorderOverviewSections from '@/components/ReorderOverviewSections.vue'
 import { useMessagesStore } from '@/stores/messages'
 import type OverviewSection from '@/components/OverviewSection.vue'
+import { BrowsingContextKey } from '@/functions/browsing-context'
+import { useLibraryViewStore } from '@/stores/library-view'
 
 const intl = useIntl()
 const display = useDisplay()
 const route = useRoute('/libraries/[viewId]/overview')
 const libraryViewId = route.params.viewId
 
+provide(
+  BrowsingContextKey,
+  computed(() => ({ type: 'libraryView', id: libraryViewId, subType: 'overview' })),
+)
+
 const isExactParentRoute = computed(() => route.name === '/libraries/[viewId]/overview')
+
+const libraryViewStore = useLibraryViewStore()
+if (isExactParentRoute.value) {
+  libraryViewStore.saveState(libraryViewId, 'overview')
+}
 
 const { userSettings } = useClientSettingsUser()
 const overviewSections = computed(() => {
@@ -119,8 +131,10 @@ function editSections() {
     scrollable: false,
     fullscreen: display.xs.value,
   }
-  dialogConfirmEdit.value.slot = {
-    component: markRaw(ReorderOverviewSections),
+  dialogConfirmEdit.value.slots = {
+    default: {
+      component: markRaw(ReorderOverviewSections),
+    },
   }
   dialogConfirmEdit.value.record = toValue(overviewSections)
   dialogConfirmEdit.value.callback = (

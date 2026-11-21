@@ -1,11 +1,12 @@
 package org.gotson.komga.infrastructure.jooq.main
 
+import org.gotson.komga.application.query.isEmpty
 import org.gotson.komga.domain.model.ContentRestrictions
 import org.gotson.komga.domain.model.ReadList
 import org.gotson.komga.domain.model.SearchContext
 import org.gotson.komga.domain.persistence.ReadListRepository
 import org.gotson.komga.infrastructure.jooq.SplitDslDaoBase
-import org.gotson.komga.infrastructure.jooq.TempTable.Companion.withTempTable
+import org.gotson.komga.infrastructure.jooq.TempTable.Companion.useTempTable
 import org.gotson.komga.infrastructure.jooq.inOrNoCondition
 import org.gotson.komga.infrastructure.jooq.sortByValues
 import org.gotson.komga.infrastructure.jooq.toCondition
@@ -93,12 +94,6 @@ class ReadListDao(
           .apply { if (context.restrictions.isRestricted) leftJoin(sd).on(sd.SERIES_ID.eq(b.SERIES_ID)) }
           .where(conditions)
 
-    val count =
-      if (queryIds != null)
-        dslRO.fetchCount(queryIds)
-      else
-        dslRO.fetchCount(rl, searchCondition)
-
     val orderBy =
       pageable.sort.mapNotNull {
         if (it.property == "relevance" && !readListIds.isNullOrEmpty())
@@ -108,13 +103,23 @@ class ReadListDao(
       }
 
     val items =
-      dslRO
-        .selectBase(context.restrictions.isRestricted)
-        .where(conditions)
-        .apply { if (queryIds != null) and(rl.ID.`in`(queryIds)) }
-        .orderBy(orderBy)
-        .apply { if (pageable.isPaged) limit(pageable.pageSize).offset(pageable.offset) }
-        .fetchAndMap(dslRO, context.libraryIds, context.restrictions)
+      if (pageable.isEmpty())
+        emptyList()
+      else
+        dslRO
+          .selectBase(context.restrictions.isRestricted)
+          .where(conditions)
+          .apply { if (queryIds != null) and(rl.ID.`in`(queryIds)) }
+          .orderBy(orderBy)
+          .apply { if (pageable.isPaged) limit(pageable.pageSize).offset(pageable.offset) }
+          .fetchAndMap(dslRO, context.libraryIds, context.restrictions)
+
+    val count =
+      when {
+        pageable.isUnpaged -> items.size
+        queryIds != null -> dslRO.fetchCount(queryIds)
+        else -> dslRO.fetchCount(rl, searchCondition)
+      }
 
     val pageSort = if (orderBy.isNotEmpty()) pageable.sort else Sort.unsorted()
     return PageImpl(
@@ -257,10 +262,10 @@ class ReadListDao(
 
   @Transactional
   override fun removeBooksFromAll(bookIds: Collection<String>) {
-    dslRW.withTempTable(batchSize, bookIds).use {
-      dslRW
+    dslRW.useTempTable(batchSize, bookIds) { dsl, tempTable ->
+      dsl
         .deleteFrom(rlb)
-        .where(rlb.BOOK_ID.`in`(it.selectTempStrings()))
+        .where(rlb.BOOK_ID.`in`(tempTable.selectTempStrings()))
         .execute()
     }
   }

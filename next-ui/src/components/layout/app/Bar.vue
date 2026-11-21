@@ -46,9 +46,10 @@
     </v-app-bar-title>
 
     <template #append>
-      <TaskIndicator />
-      <LocaleSelector />
-      <ThemeSelector />
+      <div class="d-flex align-center ga-2 pe-2">
+        <TaskIndicator />
+        <UserMenu />
+      </div>
     </template>
   </v-app-bar>
 </template>
@@ -79,7 +80,3 @@ const tooltipMessage = computed(() =>
   display.mobile.value ? expandMessage : appStore.drawer ? collapseMessage : expandMessage,
 )
 </script>
-
-<script lang="ts"></script>
-
-<style scoped></style>

@@ -1,9 +1,15 @@
 {
+  "+6DtMH": {
+    "defaultMessage": "用户界面"
+  },
   "+6YDzS": {
     "defaultMessage": "无数据"
   },
   "+8++PW": {
     "defaultMessage": "库创建：{library}"
+  },
+  "+C/+3o": {
+    "defaultMessage": "列表不能为空"
   },
   "+PNCoe": {
     "defaultMessage": "副标题"
@@ -17,6 +23,9 @@
   "+mJGIg": {
     "defaultMessage": "文件路径"
   },
+  "+mvfpU": {
+    "defaultMessage": "{count, plural, one {# 系列} other {# 系列} } 已更新"
+  },
   "+opDqu": {
     "defaultMessage": "跳转到"
   },
@@ -25,6 +34,18 @@
   },
   "+r8FCS": {
     "defaultMessage": "服务器监听端口"
+  },
+  "+sF9Fw": {
+    "defaultMessage": "现有值"
+  },
+  "+sXZtI": {
+    "defaultMessage": "关闭"
+  },
+  "+y+9xL": {
+    "defaultMessage": "文件大小超过限制： {filenames}"
+  },
+  "/4RRHN": {
+    "defaultMessage": "列表不能为空"
   },
   "/5Gb4y": {
     "defaultMessage": "删除"
@@ -35,14 +56,17 @@
   "/Acs82": {
     "defaultMessage": "创建或添加到阅读列表"
   },
+  "/LDx9p": {
+    "defaultMessage": "比较书籍"
+  },
   "/NAG9i": {
     "defaultMessage": "无结果"
   },
+  "/TRmi5": {
+    "defaultMessage": "共享标签"
+  },
   "/YxHru": {
     "defaultMessage": "部分选中的书籍是重复的"
-  },
-  "/bathK": {
-    "defaultMessage": "仅允许该年龄以下"
   },
   "/lE31l": {
     "defaultMessage": "强制 Kobo 同步"
@@ -52,6 +76,12 @@
   },
   "02SRax": {
     "defaultMessage": "登录"
+  },
+  "083NeH": {
+    "defaultMessage": "IETF BCP 47 语言标签"
+  },
+  "0ESsC0": {
+    "defaultMessage": "继续 {provider}"
   },
   "0ILHru": {
     "defaultMessage": "确定"
@@ -65,6 +95,9 @@
   "0MePSx": {
     "defaultMessage": "拖到此处以固定库"
   },
+  "0OEO+j": {
+    "defaultMessage": "类型"
+  },
   "0UFr4y": {
     "defaultMessage": "全部"
   },
@@ -73,6 +106,9 @@
   },
   "0YG9GQ": {
     "defaultMessage": "记住我"
+  },
+  "0c6DrH": {
+    "defaultMessage": "恢复初始值"
   },
   "0eIJ3K": {
     "defaultMessage": "手动排序"
@@ -92,11 +128,17 @@
   "111Isd": {
     "defaultMessage": "重建搜索索引"
   },
+  "13nnQg": {
+    "defaultMessage": "请将新的NextUI作为该服务器的默认界面使用"
+  },
   "14/Uh8": {
     "defaultMessage": "导入模式"
   },
   "18OKhZ": {
     "defaultMessage": "查找要转换的书籍"
+  },
+  "1A8Mc1": {
+    "defaultMessage": "企业/机构"
   },
   "1E0Duw": {
     "defaultMessage": "文件大小"
@@ -107,14 +149,26 @@
   "1VkZao": {
     "defaultMessage": "更多"
   },
-  "1bxWGd": {
-    "defaultMessage": "编辑系列元数据"
+  "1dgTdi": {
+    "defaultMessage": "分析"
+  },
+  "1hsKmu": {
+    "defaultMessage": "角色"
   },
   "1qIfds": {
     "defaultMessage": "已固定"
   },
+  "1z+Z+q": {
+    "defaultMessage": "共享标签"
+  },
   "2Bh8F2": {
     "defaultMessage": "最新"
+  },
+  "2IYW7s": {
+    "defaultMessage": "URL"
+  },
+  "2LLpzV": {
+    "defaultMessage": "显示详情"
   },
   "2Sx0J4": {
     "defaultMessage": "页面"
@@ -125,6 +179,9 @@
   "2p+JVw": {
     "defaultMessage": "此 Komga 服务器尚未激活，您需要创建一个用户账户才能访问它。"
   },
+  "2uUiqM": {
+    "defaultMessage": "系列排序"
+  },
   "3DBPuv": {
     "defaultMessage": "滚动"
   },
@@ -132,7 +189,7 @@
     "defaultMessage": "编辑视图"
   },
   "3MUQYL": {
-    "defaultMessage": "创建或添加到收藏"
+    "defaultMessage": "创建或添加到合集"
   },
   "3OgH93": {
     "defaultMessage": "系列"
@@ -155,17 +212,35 @@
   "3gimvl": {
     "defaultMessage": "库菜单"
   },
+  "3lLmfX": {
+    "defaultMessage": "合集"
+  },
   "3qQjnw": {
     "defaultMessage": "语言"
   },
   "3rNj7/": {
     "defaultMessage": "点击确认"
   },
+  "3zkvDp": {
+    "defaultMessage": "关闭"
+  },
+  "40HXjy": {
+    "defaultMessage": "取消"
+  },
+  "464rk3": {
+    "defaultMessage": "选择系列"
+  },
   "4AKIbg": {
     "defaultMessage": "Kobo 同步外部端口"
   },
+  "4CIw7i": {
+    "defaultMessage": "发布状态"
+  },
   "4CX0cY": {
     "defaultMessage": "导入系列元数据"
+  },
+  "4IKM3R": {
+    "defaultMessage": "标签"
   },
   "4PDVX2": {
     "defaultMessage": "EPUB"
@@ -173,11 +248,20 @@
   "4TEXni": {
     "defaultMessage": "全部参与者"
   },
+  "4U6L0S": {
+    "defaultMessage": "链接"
+  },
   "4X3RAp": {
     "defaultMessage": "{count, plural, one {# 书籍} other {# 书籍} }"
   },
+  "4Ybicn": {
+    "defaultMessage": "创建"
+  },
   "4g2M9O": {
     "defaultMessage": "未找到系列"
+  },
+  "4jKnoO": {
+    "defaultMessage": "待读 — {number}"
   },
   "4uqafX": {
     "defaultMessage": "单行本"
@@ -197,8 +281,17 @@
   "5WMvLb": {
     "defaultMessage": "Epub"
   },
+  "5Xt1ke": {
+    "defaultMessage": "团队"
+  },
+  "5Zw5Zt": {
+    "defaultMessage": "前往合集中的下一个系列"
+  },
   "5b2A0u": {
     "defaultMessage": "您将被重定向到主页"
+  },
+  "5nswuX": {
+    "defaultMessage": "打开经典用户界面"
   },
   "5rziSG": {
     "defaultMessage": "不可用"
@@ -206,8 +299,14 @@
   "5tbu8Y": {
     "defaultMessage": "重试"
   },
+  "5voJNm": {
+    "defaultMessage": "无限制"
+  },
   "5zPpyT": {
     "defaultMessage": "年龄范围"
+  },
+  "69jd/r": {
+    "defaultMessage": "从阅读列表中移除"
   },
   "6F1ebQ": {
     "defaultMessage": "HTTP 服务器"
@@ -224,6 +323,12 @@
   "6WDISV": {
     "defaultMessage": "找不到页面"
   },
+  "6cwDEs": {
+    "defaultMessage": "暗黑"
+  },
+  "6eAECF": {
+    "defaultMessage": "库"
+  },
   "6nCIPn": {
     "defaultMessage": "类型"
   },
@@ -236,6 +341,15 @@
   "7M1pUf": {
     "defaultMessage": "清理垃圾"
   },
+  "7Ndu8p": {
+    "defaultMessage": "编号"
+  },
+  "7RfNiY": {
+    "defaultMessage": "简介"
+  },
+  "7gdpKG": {
+    "defaultMessage": "创建"
+  },
   "7hwFJo": {
     "defaultMessage": "作者"
   },
@@ -244,6 +358,9 @@
   },
   "8/BXfN": {
     "defaultMessage": "全部"
+  },
+  "811PxA": {
+    "defaultMessage": "或"
   },
   "81BMAQ": {
     "defaultMessage": "导入书籍元数据"
@@ -257,6 +374,12 @@
   "8Dun/Y": {
     "defaultMessage": "否"
   },
+  "8KsYYJ": {
+    "defaultMessage": "标签"
+  },
+  "8LT9D4": {
+    "defaultMessage": "取消"
+  },
   "8NDqor": {
     "defaultMessage": "嵌字师"
   },
@@ -265,6 +388,9 @@
   },
   "8P7Yn+": {
     "defaultMessage": "年龄分级"
+  },
+  "8Yd/3a": {
+    "defaultMessage": "职务名称"
   },
   "8hC76W": {
     "defaultMessage": "任务"
@@ -281,8 +407,17 @@
   "9/1/c7": {
     "defaultMessage": "生成书籍缩略图"
   },
+  "90k6a7": {
+    "defaultMessage": "合集必须至少包含一个系列"
+  },
   "90yqRq": {
     "defaultMessage": "添加库"
+  },
+  "98Q8V7": {
+    "defaultMessage": "移除"
+  },
+  "9GaR82": {
+    "defaultMessage": "常规"
   },
   "9TJRkm": {
     "defaultMessage": "导入系列元数据"
@@ -292,6 +427,15 @@
   },
   "9XDmYO": {
     "defaultMessage": "删除用户"
+  },
+  "9aVhJC": {
+    "defaultMessage": "CBZ"
+  },
+  "9dNd68": {
+    "defaultMessage": "用户上传"
+  },
+  "9mujmD": {
+    "defaultMessage": "无发行日期"
   },
   "9oA9gw": {
     "defaultMessage": "未固定"
@@ -305,8 +449,8 @@
   "ALGXT9": {
     "defaultMessage": "重复"
   },
-  "AeA9Ka": {
-    "defaultMessage": "无限制"
+  "AMQANB": {
+    "defaultMessage": "添加自定义类型"
   },
   "Ai7bBV": {
     "defaultMessage": "{count, plural, one {# 页} other {# 页} }"
@@ -317,6 +461,9 @@
   "AjWlka": {
     "defaultMessage": "登录名或密码无效"
   },
+  "AoSCGy": {
+    "defaultMessage": "左侧"
+  },
   "B2wcN0": {
     "defaultMessage": "从条形码导入 ISBN"
   },
@@ -325,6 +472,9 @@
   },
   "BQmPch": {
     "defaultMessage": "删除书籍"
+  },
+  "BXkP7H": {
+    "defaultMessage": "关闭"
   },
   "Bewgy6": {
     "defaultMessage": "系列封面"
@@ -347,8 +497,14 @@
   "C1bGrS": {
     "defaultMessage": "显示信息"
   },
+  "C4S+yv": {
+    "defaultMessage": "必须是有效的 URL"
+  },
   "C9LkYh": {
     "defaultMessage": "注释"
+  },
+  "CAKrBF": {
+    "defaultMessage": "合集已创建"
   },
   "CE7pPQ": {
     "defaultMessage": "文件路径"
@@ -374,6 +530,9 @@
   "CVk1J6": {
     "defaultMessage": "错误"
   },
+  "CW0idP": {
+    "defaultMessage": "出版商"
+  },
   "CY8sfH": {
     "defaultMessage": "扫描所有库"
   },
@@ -382,6 +541,12 @@
   },
   "CpNtjm": {
     "defaultMessage": "日期时间"
+  },
+  "CqlsIa": {
+    "defaultMessage": "贡献者"
+  },
+  "Cv11G8": {
+    "defaultMessage": "书籍总数"
   },
   "CvsH7/": {
     "defaultMessage": "近期无活动"
@@ -392,8 +557,17 @@
   "CxuwFR": {
     "defaultMessage": "不支持该文件类型"
   },
+  "D+ZsSd": {
+    "defaultMessage": "添加别名"
+  },
   "D/yypj": {
     "defaultMessage": "<ul><li>这将删除此 API 密钥的所有同步历史记录。</li><li>您的 Kobo 将在下次同步时同步所有内容。</li></ul>"
+  },
+  "D4qD6S": {
+    "defaultMessage": "锁定字段"
+  },
+  "DG4tYb": {
+    "defaultMessage": "{count, plural, one {# 本} other {# 本} }"
   },
   "DK4PsD": {
     "defaultMessage": "系列书籍"
@@ -404,11 +578,20 @@
   "DNmepU": {
     "defaultMessage": "如果您使用 KOReader 同步，请启用此选项"
   },
+  "DbrNAW": {
+    "defaultMessage": "搜索或创建"
+  },
   "DfakWW": {
     "defaultMessage": "删除文件"
   },
+  "DgXStw": {
+    "defaultMessage": "返回合集中的上一个系列"
+  },
   "Dn4qvV": {
     "defaultMessage": "恢复默认"
+  },
+  "Dsytsl": {
+    "defaultMessage": "排除年龄（包括）"
   },
   "DwDa04": {
     "defaultMessage": "扫描间隔"
@@ -417,7 +600,7 @@
     "defaultMessage": "媒体分析"
   },
   "E0cw62": {
-    "defaultMessage": "收藏已更新：{collection}"
+    "defaultMessage": "合集已更新：{collection}"
   },
   "E1kQun": {
     "defaultMessage": "浏览"
@@ -431,6 +614,9 @@
   "EIYfj+": {
     "defaultMessage": "编号"
   },
+  "ELl0N9": {
+    "defaultMessage": "缺少封面的书籍现在可以直接在主媒体库视图中筛选。"
+  },
   "ELttw/": {
     "defaultMessage": "清理垃圾"
   },
@@ -443,8 +629,26 @@
   "EabQ38": {
     "defaultMessage": "记住我"
   },
+  "EbhcQd": {
+    "defaultMessage": "详情"
+  },
+  "EnHAAa": {
+    "defaultMessage": "PDF"
+  },
+  "Epp7Fi": {
+    "defaultMessage": "标签"
+  },
+  "Er4D87": {
+    "defaultMessage": "视觉"
+  },
   "EzOmuX": {
     "defaultMessage": "创建时间"
+  },
+  "FBGnzt": {
+    "defaultMessage": "已存在同名阅读列表"
+  },
+  "FH0CJ+": {
+    "defaultMessage": "页数"
   },
   "FLqm9f": {
     "defaultMessage": "帮助我们翻译"
@@ -455,11 +659,20 @@
   "FVq9w5": {
     "defaultMessage": "Mylar (series.json)"
   },
+  "FX2bI8": {
+    "defaultMessage": "{count, plural, one {# 系列} other {# 系列} } 已从合集中移除: {collection}"
+  },
   "FZXkIP": {
     "defaultMessage": "翻译"
   },
+  "Fdinos": {
+    "defaultMessage": "海报"
+  },
   "FpwJlU": {
     "defaultMessage": "保存更改"
+  },
+  "Fwvj/i": {
+    "defaultMessage": "{count, plural, one {# 个系列} other {# 个系列} }"
   },
   "G/T8/2": {
     "defaultMessage": "取消"
@@ -479,6 +692,9 @@
   "GnHrCd": {
     "defaultMessage": "使用本地图片"
   },
+  "Gwmnm6": {
+    "defaultMessage": "系列"
+  },
   "GyRV+/": {
     "defaultMessage": "如果库托管在 Google Drive 上，应启用此选项"
   },
@@ -487,6 +703,9 @@
   },
   "H+LXXE": {
     "defaultMessage": "拖到此处以取消固定库"
+  },
+  "H1+81t": {
+    "defaultMessage": "手动"
   },
   "H2B6uF": {
     "defaultMessage": "选择一个系列"
@@ -499,6 +718,9 @@
   },
   "HHvDPs": {
     "defaultMessage": "邮箱"
+  },
+  "HIKKsB": {
+    "defaultMessage": "用户"
   },
   "HMbMJF": {
     "defaultMessage": "日期时间"
@@ -515,11 +737,14 @@
   "HZqgan": {
     "defaultMessage": "关闭"
   },
+  "HaF+a6": {
+    "defaultMessage": "库"
+  },
   "HaWCi3": {
     "defaultMessage": "设置"
   },
   "HdsnFp": {
-    "defaultMessage": "收藏已删除：{collection}"
+    "defaultMessage": "合集已删除：{collection}"
   },
   "Hl9H/B": {
     "defaultMessage": "媒体"
@@ -529,6 +754,9 @@
   },
   "Hyz5su": {
     "defaultMessage": "导入书籍"
+  },
+  "I75Xgh": {
+    "defaultMessage": "前往系列中的下一本"
   },
   "I9L5Ag": {
     "defaultMessage": "排序"
@@ -551,6 +779,18 @@
   "IXhDH6": {
     "defaultMessage": "重复页面"
   },
+  "Icqm5y": {
+    "defaultMessage": "页码"
+  },
+  "If3RCw": {
+    "defaultMessage": "将为所有选定项目清除值"
+  },
+  "Ih4MH9": {
+    "defaultMessage": "请调整搜索条件后重试"
+  },
+  "IlRX+s": {
+    "defaultMessage": "宽：{width}，高：{height}"
+  },
   "InW6ko": {
     "defaultMessage": "翻译"
   },
@@ -562,6 +802,9 @@
   },
   "J44THG": {
     "defaultMessage": "状态"
+  },
+  "J8l62K": {
+    "defaultMessage": "添加"
   },
   "J8rAqm": {
     "defaultMessage": "发行年份"
@@ -578,6 +821,12 @@
   "JbF1nK": {
     "defaultMessage": "用户 {email} 的密码已更改"
   },
+  "Jj4uO/": {
+    "defaultMessage": "页数"
+  },
+  "Ju97UA": {
+    "defaultMessage": "阅读"
+  },
   "JwBlXP": {
     "defaultMessage": "打开"
   },
@@ -590,11 +839,20 @@
   "KBLD9U": {
     "defaultMessage": "年龄分级"
   },
+  "KPlFII": {
+    "defaultMessage": "年龄限制"
+  },
+  "KTifVk": {
+    "defaultMessage": "所有重要项目"
+  },
   "Kie8HQ": {
     "defaultMessage": "书籍"
   },
   "Ku7NJ+": {
     "defaultMessage": "找不到系列文件"
+  },
+  "LBuB6T": {
+    "defaultMessage": "添加到阅读列表"
   },
   "LD5j8J": {
     "defaultMessage": "请求的系列"
@@ -602,8 +860,14 @@
   "LFf8QB": {
     "defaultMessage": "删除"
   },
+  "LKoz42": {
+    "defaultMessage": "简介"
+  },
   "LM4LL9": {
     "defaultMessage": "刷新系列本地图片"
+  },
+  "LOcuZ2": {
+    "defaultMessage": "标记为已读"
   },
   "LaMAsc": {
     "defaultMessage": "身份验证活动"
@@ -617,6 +881,12 @@
   "Lto2Lg": {
     "defaultMessage": "必须以“/”开头，不能以“/-_”结尾，并且只能包含“/-_a-z0-9”"
   },
+  "M3OTuv": {
+    "defaultMessage": "多个值"
+  },
+  "M4STMh": {
+    "defaultMessage": "撤销"
+  },
   "MC2JtF": {
     "defaultMessage": "全部"
   },
@@ -625,6 +895,9 @@
   },
   "MKs9N+": {
     "defaultMessage": "概览"
+  },
+  "MYYgTv": {
+    "defaultMessage": "文件大小未知"
   },
   "MoOECu": {
     "defaultMessage": "导入系列元数据"
@@ -644,8 +917,14 @@
   "NKVL81": {
     "defaultMessage": "单行本"
   },
+  "NLiXdm": {
+    "defaultMessage": "标签"
+  },
   "NN7kAK": {
     "defaultMessage": "已强制 Kobo 同步：{apiKeyComment}"
+  },
+  "Nahedl": {
+    "defaultMessage": "添加"
   },
   "NasBHg": {
     "defaultMessage": "阅读日期"
@@ -653,8 +932,14 @@
   "Nb0V0p": {
     "defaultMessage": "缺少海报"
   },
+  "NgRz9T": {
+    "defaultMessage": "权限"
+  },
   "NhIart": {
     "defaultMessage": "删除书籍文件"
+  },
+  "No9Upl": {
+    "defaultMessage": "标题"
   },
   "NpjqFA": {
     "defaultMessage": "尝试调整筛选条件"
@@ -670,6 +955,9 @@
   },
   "O4Nnj5": {
     "defaultMessage": "第 {number} 本"
+  },
+  "O6qNva": {
+    "defaultMessage": "详情"
   },
   "O9hZBS": {
     "defaultMessage": "海报大小"
@@ -701,8 +989,14 @@
   "P8Ox+D": {
     "defaultMessage": "书籍元数据已更新：{book}"
   },
+  "P9B8fE": {
+    "defaultMessage": "返回系列中的上一本"
+  },
   "PTr5Wc": {
     "defaultMessage": "请检查您的 Komga 服务器是否正在运行"
+  },
+  "PUU04H": {
+    "defaultMessage": "拉伸海报以适合卡片"
   },
   "PguYSD": {
     "defaultMessage": "覆盖现有阅读列表"
@@ -710,14 +1004,23 @@
   "Pj29A+": {
     "defaultMessage": "检测重复页面所需"
   },
+  "Po0Z4Z": {
+    "defaultMessage": "阅读列表"
+  },
   "Pp3+1S": {
     "defaultMessage": "状态"
   },
   "PvKF7E": {
     "defaultMessage": "库已删除：{library}"
   },
+  "Q7tJAG": {
+    "defaultMessage": "阅读列表"
+  },
   "QALnuE": {
     "defaultMessage": "文件类型"
+  },
+  "QBQ5a/": {
+    "defaultMessage": "标题"
   },
   "QIr0z7": {
     "defaultMessage": "邮箱"
@@ -727,6 +1030,12 @@
   },
   "Qxij/I": {
     "defaultMessage": "已删除的页面"
+  },
+  "Qz1UTX": {
+    "defaultMessage": "关闭"
+  },
+  "RCUCFa": {
+    "defaultMessage": "阅读列表中必须至少包含一本书籍"
   },
   "REmxIM": {
     "defaultMessage": "修改时间"
@@ -746,20 +1055,47 @@
   "RTNaxB": {
     "defaultMessage": "展开侧边栏"
   },
+  "RcbD73": {
+    "defaultMessage": "第 {number} 本"
+  },
+  "Rgl4jp": {
+    "defaultMessage": "{count, plural, one {# 书籍} other {# 书籍} } 已更新"
+  },
   "Rm52xk": {
     "defaultMessage": "欢迎使用 Komga"
+  },
+  "Rt/kZN": {
+    "defaultMessage": "{first} 和 {rest, plural, one {# 其他书籍} other {# 其他书籍} }"
+  },
+  "Rw2Iwj": {
+    "defaultMessage": "前往阅读列表中的下一本"
   },
   "RwuMl5": {
     "defaultMessage": "自动修复错误的文件扩展名"
   },
+  "S1/qO0": {
+    "defaultMessage": "合集"
+  },
   "S39lnB": {
     "defaultMessage": "发行年份"
+  },
+  "S9SjlA": {
+    "defaultMessage": "已选择"
+  },
+  "SF1C8o": {
+    "defaultMessage": "保存并关闭"
   },
   "SIfmpC": {
     "defaultMessage": "选择系列"
   },
+  "ST34jK": {
+    "defaultMessage": "私人阅读时段"
+  },
   "STdfYg": {
     "defaultMessage": "分析页面尺寸"
+  },
+  "SWm3SC": {
+    "defaultMessage": "添加链接"
   },
   "SZHxy4": {
     "defaultMessage": "选择书籍"
@@ -782,14 +1118,23 @@
   "TAVSfO": {
     "defaultMessage": "书籍数量"
   },
+  "TCjAyg": {
+    "defaultMessage": "{first} 和 {rest, plural, one {# 其他系列} other {# 其他系列} }"
+  },
   "TG7prC": {
     "defaultMessage": "添加日期"
   },
   "TPX4qo": {
     "defaultMessage": "标签"
   },
+  "TTO9NT": {
+    "defaultMessage": "简介"
+  },
   "TUxJCd": {
     "defaultMessage": "应用启动时扫描"
+  },
+  "TfdugD": {
+    "defaultMessage": "按发布日期"
   },
   "ThHjN4": {
     "defaultMessage": "系列"
@@ -797,14 +1142,32 @@
   "Thjcar": {
     "defaultMessage": "书籍标签"
   },
+  "TkIvo8": {
+    "defaultMessage": "尺寸未知"
+  },
   "ToD0+o": {
     "defaultMessage": "邮箱"
+  },
+  "TtH2LJ": {
+    "defaultMessage": "必须是有效的 ISBN-13"
   },
   "TwB29u": {
     "defaultMessage": "仅在封面和下载同步出现问题时设置"
   },
   "U3Uo3q": {
     "defaultMessage": "密码"
+  },
+  "UFZ+PY": {
+    "defaultMessage": "标签"
+  },
+  "UPOAPc": {
+    "defaultMessage": "清除搜索"
+  },
+  "USJuJ1": {
+    "defaultMessage": "本地图片"
+  },
+  "UTPZNG": {
+    "defaultMessage": "阅读列表名称"
   },
   "UaD47n": {
     "defaultMessage": "重新生成“记住我”密钥"
@@ -815,8 +1178,14 @@
   "Uj479p": {
     "defaultMessage": "发行日期"
   },
+  "Ulohnz": {
+    "defaultMessage": "标记为未读"
+  },
   "UoaxO7": {
     "defaultMessage": "书籍将被升级"
+  },
+  "UsTdV2": {
+    "defaultMessage": "共享标签"
   },
   "Usohru": {
     "defaultMessage": "浏览"
@@ -827,11 +1196,17 @@
   "UvhIIT": {
     "defaultMessage": "共享库"
   },
+  "UxBl+J": {
+    "defaultMessage": "明亮"
+  },
   "V/OYJE": {
     "defaultMessage": "用户已删除：{email}"
   },
   "V3wgcu": {
     "defaultMessage": "重复页面"
+  },
+  "V8tkJa": {
+    "defaultMessage": "自动 OAuth2 登录"
   },
   "VHe28r": {
     "defaultMessage": "更新日期"
@@ -845,11 +1220,17 @@
   "VcueWO": {
     "defaultMessage": "将使用“SeriesGroup”元素"
   },
+  "VeEnkD": {
+    "defaultMessage": "链接"
+  },
   "VhMXcu": {
     "defaultMessage": "{total, plural, one {{count} / # 书籍} other {{count} / # 书籍} }"
   },
   "Vpmsx0": {
     "defaultMessage": "系列书籍"
+  },
+  "Vs7y3+": {
+    "defaultMessage": "添加到阅读列表"
   },
   "VtC7Ce": {
     "defaultMessage": "主编"
@@ -878,6 +1259,9 @@
   "WPxleH": {
     "defaultMessage": "书籍文件将被删除<ul><li>书籍媒体文件将从磁盘中删除。</li><li>书籍的辅助文件将从磁盘中删除。</li><li>书籍连同其元数据和阅读进度将被删除。</li></ul><b>此操作无法撤销。</b>"
   },
+  "WSTiWA": {
+    "defaultMessage": "已添加到合集"
+  },
   "WVblsI": {
     "defaultMessage": "页数"
   },
@@ -887,11 +1271,17 @@
   "WhasCZ": {
     "defaultMessage": "新密码"
   },
+  "Wi+k3O": {
+    "defaultMessage": "可使用小数"
+  },
   "Wivz5J": {
     "defaultMessage": "关闭"
   },
   "Wlzzv8": {
     "defaultMessage": "请求的编号"
+  },
+  "WyueEI": {
+    "defaultMessage": "编辑系列元数据"
   },
   "X/Z8x+": {
     "defaultMessage": "请立即复制您的 API 密钥，之后您将无法再次看到它！"
@@ -901,6 +1291,9 @@
   },
   "X80giU": {
     "defaultMessage": "添加"
+  },
+  "XCwAkR": {
+    "defaultMessage": "打开"
   },
   "XDV3Si": {
     "defaultMessage": "更多"
@@ -926,11 +1319,17 @@
   "XnidLu": {
     "defaultMessage": "请输入 <b>{validateText}</b> 以确认。"
   },
+  "Xq4kkn": {
+    "defaultMessage": "返回阅读列表中的上一本"
+  },
   "XuqK4C": {
     "defaultMessage": "未知重复"
   },
   "Xx+ITC": {
     "defaultMessage": "我的活动"
+  },
+  "Xxk+hl": {
+    "defaultMessage": "收录于"
   },
   "Xxu514": {
     "defaultMessage": "删除系列文件"
@@ -957,13 +1356,19 @@
     "defaultMessage": "已请求导入"
   },
   "YVQ49g": {
-    "defaultMessage": "编辑收藏"
+    "defaultMessage": "编辑合集"
+  },
+  "YaCWYs": {
+    "defaultMessage": "媒体分析已迁移"
   },
   "YbkrN9": {
     "defaultMessage": "IP"
   },
-  "Yf4DJ2": {
-    "defaultMessage": "用户界面"
+  "YeFgyc": {
+    "defaultMessage": "现在可以直接在主媒体库视图中筛选出错的书籍。"
+  },
+  "YeUvoE": {
+    "defaultMessage": "自定义职务..."
   },
   "Ym48fa": {
     "defaultMessage": "近期无事件"
@@ -983,6 +1388,12 @@
   "ZEbDUo": {
     "defaultMessage": "已完结"
   },
+  "ZGppaw": {
+    "defaultMessage": "系列"
+  },
+  "ZPuFVu": {
+    "defaultMessage": "常规"
+  },
   "ZWFPAg": {
     "defaultMessage": "密码必须一致"
   },
@@ -995,11 +1406,23 @@
   "Zh8AOV": {
     "defaultMessage": "编辑用户"
   },
+  "ZiTv+F": {
+    "defaultMessage": "缺少封面已迁移"
+  },
   "ZnjyI3": {
     "defaultMessage": "显示更少"
   },
+  "ZnnG58": {
+    "defaultMessage": "海报"
+  },
   "Zozcfh": {
     "defaultMessage": "源"
+  },
+  "Zzqa/A": {
+    "defaultMessage": "从合集中移除"
+  },
+  "a+32Gi": {
+    "defaultMessage": "允许最大年龄（包括）"
   },
   "a5MYiP": {
     "defaultMessage": "海报"
@@ -1010,8 +1433,14 @@
   "aDFZOW": {
     "defaultMessage": "邮箱"
   },
+  "aHyrmS": {
+    "defaultMessage": "删除"
+  },
   "aOiU5f": {
     "defaultMessage": "库已更新：{library}"
+  },
+  "aR6KDt": {
+    "defaultMessage": "语言"
   },
   "aSDxrt": {
     "defaultMessage": "系列文件已删除：{series}"
@@ -1022,11 +1451,17 @@
   "aYalqk": {
     "defaultMessage": "选择一些书籍"
   },
+  "aeEb6w": {
+    "defaultMessage": "放弃更改或撤销上一次删除操作"
+  },
   "afXGQS": {
     "defaultMessage": "根目录"
   },
   "am3r7e": {
     "defaultMessage": "更新库"
+  },
+  "anhfpP": {
+    "defaultMessage": "不支持的文件类型"
   },
   "ap/Lnw": {
     "defaultMessage": "硬链接/复制文件"
@@ -1139,6 +1574,9 @@
   "app.user-create-dialog.all_libraries": {
     "defaultMessage": "所有库"
   },
+  "ayrmyn": {
+    "defaultMessage": "排序标题"
+  },
   "b1hvh9": {
     "defaultMessage": "自动将 CBR 转换为 CBZ"
   },
@@ -1163,8 +1601,17 @@
   "bOUy3X": {
     "defaultMessage": "书籍"
   },
+  "bRAV2F": {
+    "defaultMessage": "位置"
+  },
+  "bRxSgh": {
+    "defaultMessage": "手动"
+  },
   "bSoeY6": {
     "defaultMessage": "目标名称"
+  },
+  "bWiqyw": {
+    "defaultMessage": "类型名称"
   },
   "bk1tX8": {
     "defaultMessage": "此库将从服务器中删除。<ul><li>系列和书籍连同其元数据和阅读进度将被删除。</li><li>媒体文件不会从磁盘中删除。</li></ul><b>此操作无法撤销。</b>"
@@ -1193,6 +1640,9 @@
   "cM9FuW": {
     "defaultMessage": "选择一个系列"
   },
+  "cTPeOs": {
+    "defaultMessage": "或使用以下快捷键粘贴"
+  },
   "cWVIRm": {
     "defaultMessage": "用户代理"
   },
@@ -1202,14 +1652,20 @@
   "ccDES8": {
     "defaultMessage": "书籍文件已删除：{book}"
   },
+  "cfWux+": {
+    "defaultMessage": "合集名称"
+  },
   "crClNV": {
     "defaultMessage": "封面"
   },
   "cyQk6S": {
-    "defaultMessage": "收藏"
+    "defaultMessage": "合集"
   },
   "d2J/J/": {
     "defaultMessage": "选择"
+  },
+  "d5c33V": {
+    "defaultMessage": "媒体类型未知"
   },
   "d8lMZe": {
     "defaultMessage": "创建用户账户"
@@ -1223,14 +1679,29 @@
   "dLE2PW": {
     "defaultMessage": "无活动"
   },
+  "dN5GoW": {
+    "defaultMessage": "书籍"
+  },
+  "dNnqm2": {
+    "defaultMessage": "编辑书籍元数据"
+  },
+  "dP6SpT": {
+    "defaultMessage": "按名称"
+  },
   "dQ9kx9": {
     "defaultMessage": "语言选择器"
   },
   "dSlkbn": {
     "defaultMessage": "整体扫描行为"
   },
+  "dSy8IC": {
+    "defaultMessage": "已添加到阅读列表"
+  },
   "da/wb0": {
     "defaultMessage": "全部标为已读"
+  },
+  "ddpX9L": {
+    "defaultMessage": "常规"
   },
   "ddthL2": {
     "defaultMessage": "确认"
@@ -1241,8 +1712,14 @@
   "dipMGb": {
     "defaultMessage": "创建"
   },
+  "dto0D+": {
+    "defaultMessage": "整理"
+  },
   "dx9s7S": {
     "defaultMessage": "创建时间"
+  },
+  "e7cgeE": {
+    "defaultMessage": "添加到合集"
   },
   "e8DJzj": {
     "defaultMessage": "主题"
@@ -1427,6 +1904,9 @@
   "estf95": {
     "defaultMessage": "阅读列表已创建"
   },
+  "exrB0E": {
+    "defaultMessage": "常规"
+  },
   "eyYZUe": {
     "defaultMessage": "库"
   },
@@ -1436,8 +1916,14 @@
   "f1fW81": {
     "defaultMessage": "分析状态"
   },
+  "f3/J8+": {
+    "defaultMessage": "右侧"
+  },
   "fQIepD": {
     "defaultMessage": "书籍"
+  },
+  "fRfbEb": {
+    "defaultMessage": "添加角色"
   },
   "fVqdik": {
     "defaultMessage": "ComicInfo.xml (CBR/CBZ)"
@@ -1466,8 +1952,17 @@
   "ggaOkE": {
     "defaultMessage": "未找到数据"
   },
+  "gjlnkj": {
+    "defaultMessage": "系统"
+  },
+  "gojrIJ": {
+    "defaultMessage": "选择系列"
+  },
   "gsqrOd": {
     "defaultMessage": "重新生成海报"
+  },
+  "gtEH1R": {
+    "defaultMessage": "常规"
   },
   "gxZjIe": {
     "defaultMessage": "操作"
@@ -1487,6 +1982,9 @@
   "hJEc5M": {
     "defaultMessage": "库菜单"
   },
+  "hPYi11": {
+    "defaultMessage": "阅读方向"
+  },
   "hPo41m": {
     "defaultMessage": "未找到数据"
   },
@@ -1502,6 +2000,9 @@
   "hgiBeR": {
     "defaultMessage": "最新活动"
   },
+  "hkbgs/": {
+    "defaultMessage": "添加自定义职务"
+  },
   "hrh5Rn": {
     "defaultMessage": "升级"
   },
@@ -1511,11 +2012,29 @@
   "i+kSy9": {
     "defaultMessage": "刷新"
   },
+  "i6UTPu": {
+    "defaultMessage": "解锁字段"
+  },
+  "iCYg8R": {
+    "defaultMessage": "没有找到与“<b>{search}</b>”匹配的结果。按 <kbd>Enter</kbd> 或点击以创建新条目。"
+  },
   "iDU5FS": {
     "defaultMessage": "记住我时长（天数）"
   },
+  "iGdw+C": {
+    "defaultMessage": "继续"
+  },
   "iNBto3": {
     "defaultMessage": "将未处理的请求代理到 Kobo 商店"
+  },
+  "iQKrku": {
+    "defaultMessage": "EPUB"
+  },
+  "iVYrha": {
+    "defaultMessage": "常规"
+  },
+  "icSG40": {
+    "defaultMessage": "搜索或创建"
   },
   "ieysdI": {
     "defaultMessage": "升级搜索索引"
@@ -1539,13 +2058,28 @@
     "defaultMessage": "确认"
   },
   "jD87k9": {
-    "defaultMessage": "此收藏将被删除<ul><li>系列和书籍不会被删除。</li></ul><b>此操作无法撤销。</b>"
+    "defaultMessage": "此合集将被删除<ul><li>系列和书籍不会被删除。</li></ul><b>此操作无法撤销。</b>"
   },
   "jHJk+v": {
     "defaultMessage": "创建时间"
   },
   "jN3N1Q": {
     "defaultMessage": "分析"
+  },
+  "jYOsNC": {
+    "defaultMessage": "未选中"
+  },
+  "jeXb2z": {
+    "defaultMessage": "媒体类型"
+  },
+  "jm9oYh": {
+    "defaultMessage": "任意类型"
+  },
+  "jnjpZy": {
+    "defaultMessage": "本地文件"
+  },
+  "jpdD8R": {
+    "defaultMessage": "主题"
   },
   "jyrqhz": {
     "defaultMessage": "条形码"
@@ -1557,7 +2091,10 @@
     "defaultMessage": "上色师"
   },
   "k6BCzW": {
-    "defaultMessage": "删除收藏"
+    "defaultMessage": "删除合集"
+  },
+  "k9X/05": {
+    "defaultMessage": "海报"
   },
   "kDc7YL": {
     "defaultMessage": "默认情况下，服务器不会立即删除丢失文件的书籍信息。如果驱动器只是暂时断开连接，这会有所帮助。而当您选择清空某个库的垃圾时，缺失文件的所有书籍都会被删除。"
@@ -1570,6 +2107,9 @@
   },
   "kHmCVM": {
     "defaultMessage": "扫描库"
+  },
+  "kMw47z": {
+    "defaultMessage": "从阅读列表中移除"
   },
   "kXuNY8": {
     "defaultMessage": "将页面添加到选择中"
@@ -1610,6 +2150,9 @@
   "lFTdQ+": {
     "defaultMessage": "标记为"
   },
+  "lFWPpj": {
+    "defaultMessage": "添加类型"
+  },
   "lPZ5hy": {
     "defaultMessage": "关闭"
   },
@@ -1619,8 +2162,17 @@
   "laWvMU": {
     "defaultMessage": "确定"
   },
+  "ldAVd7": {
+    "defaultMessage": "阅读列表"
+  },
+  "lkoTf7": {
+    "defaultMessage": "CBR"
+  },
   "lt7Tru": {
     "defaultMessage": "系列"
+  },
+  "lu0qxx": {
+    "defaultMessage": "移除"
   },
   "lvCpSX": {
     "defaultMessage": "操作"
@@ -1640,11 +2192,14 @@
   "mP9Ldq": {
     "defaultMessage": "创建日期"
   },
-  "mtUacw": {
-    "defaultMessage": "编辑书籍元数据"
+  "mQ3hSR": {
+    "defaultMessage": "标签限制"
   },
   "n0TnQ2": {
     "defaultMessage": "服务器无法访问"
+  },
+  "n0tWL5": {
+    "defaultMessage": "批量编辑"
   },
   "n0yuoo": {
     "defaultMessage": "活动"
@@ -1661,14 +2216,29 @@
   "nJiYF7": {
     "defaultMessage": "确认密码"
   },
+  "nOcpr8": {
+    "defaultMessage": "单篇"
+  },
+  "nWgSSS": {
+    "defaultMessage": "合集"
+  },
+  "nXEvYQ": {
+    "defaultMessage": "保存并继续"
+  },
   "nXFVsQ": {
     "defaultMessage": "计算 KOReader 哈希"
   },
   "nXWSTf": {
     "defaultMessage": "名称"
   },
+  "nYtEQI": {
+    "defaultMessage": "刷新元数据"
+  },
   "nhrFtV": {
     "defaultMessage": "不可用"
+  },
+  "noaGSP": {
+    "defaultMessage": "选择书籍"
   },
   "nuoJ1n": {
     "defaultMessage": "创建库"
@@ -1688,6 +2258,9 @@
   "o8WeX3": {
     "defaultMessage": "删除"
   },
+  "oB2hG3": {
+    "defaultMessage": "共享"
+  },
   "oFOkWZ": {
     "defaultMessage": "API 密钥"
   },
@@ -1700,20 +2273,26 @@
   "oWsqnh": {
     "defaultMessage": "此 API 密钥有何用途？"
   },
-  "od545m": {
-    "defaultMessage": "我的账户"
-  },
   "oyeyK/": {
     "defaultMessage": "缩略图"
+  },
+  "pBivnm": {
+    "defaultMessage": "无值"
+  },
+  "pCBNlA": {
+    "defaultMessage": "库"
   },
   "pENCUD": {
     "defaultMessage": "取消"
   },
   "pHdVzh": {
-    "defaultMessage": "扫描后删除空的收藏"
+    "defaultMessage": "扫描后删除空的合集"
   },
   "pHycdf": {
     "defaultMessage": "书籍文件尚未分析"
+  },
+  "pK72Vk": {
+    "defaultMessage": "上一个"
   },
   "pR3VdQ": {
     "defaultMessage": "系列"
@@ -1724,8 +2303,20 @@
   "phzvRy": {
     "defaultMessage": "库"
   },
+  "pvD6TS": {
+    "defaultMessage": "比较"
+  },
+  "pz7ZlL": {
+    "defaultMessage": "页数"
+  },
   "q/AkPU": {
     "defaultMessage": "聚合系列元数据"
+  },
+  "q4YedO": {
+    "defaultMessage": "排序编号"
+  },
+  "q6fppQ": {
+    "defaultMessage": "删除"
   },
   "q7gxLw": {
     "defaultMessage": "此用户账户将从服务器中删除。<ul><li>此用户账户的阅读进度将被永久删除。</li><li>此用户的身份验证活动将被永久删除。</li></ul><b>此操作无法撤销。</b>"
@@ -1733,8 +2324,17 @@
   "qiZm6U": {
     "defaultMessage": "未知"
   },
+  "qlImvg": {
+    "defaultMessage": "恢复默认"
+  },
+  "qq92EF": {
+    "defaultMessage": "解锁字段"
+  },
   "r/G7j0": {
     "defaultMessage": "编号"
+  },
+  "r48oBl": {
+    "defaultMessage": "整理阅读列表"
   },
   "r5O+/d": {
     "defaultMessage": "类型"
@@ -1778,17 +2378,35 @@
   "rnClur": {
     "defaultMessage": "{rating}+"
   },
+  "roy9ap": {
+    "defaultMessage": "仅在配置单个 OAuth2 提供商时生效"
+  },
   "rrF/Z2": {
     "defaultMessage": "名称"
   },
-  "rw/Dkw": {
-    "defaultMessage": "用户界面"
+  "rtOXU6": {
+    "defaultMessage": "书籍详情"
+  },
+  "ruWj+g": {
+    "defaultMessage": "下载"
+  },
+  "rw5pw5": {
+    "defaultMessage": "视觉"
+  },
+  "s/A/wz": {
+    "defaultMessage": "ISBN"
   },
   "s1nzhU": {
     "defaultMessage": "库名称"
   },
   "sGsWvI": {
     "defaultMessage": "更改密码"
+  },
+  "sMmke1": {
+    "defaultMessage": "重要项目"
+  },
+  "sNSGMQ": {
+    "defaultMessage": "将图片拖放到这里"
   },
   "sPScum": {
     "defaultMessage": "书籍已导入"
@@ -1820,11 +2438,17 @@
   "so1P5Y": {
     "defaultMessage": "刷新书籍本地图片"
   },
+  "sutqn3": {
+    "defaultMessage": "自定义类型..."
+  },
   "syF0Ap": {
     "defaultMessage": "大小"
   },
   "t0Tkmy": {
     "defaultMessage": "强制 Kobo 同步"
+  },
+  "t38TG7": {
+    "defaultMessage": "阅读列表书籍已更新：{readlist}"
   },
   "t3B+Qv": {
     "defaultMessage": "移除已哈希的页面"
@@ -1835,14 +2459,38 @@
   "t5ZhnZ": {
     "defaultMessage": "留空以禁用"
   },
+  "tA65z3": {
+    "defaultMessage": "页码"
+  },
   "tCm6kO": {
     "defaultMessage": "{count, plural, one {# 选定} other {# 选定} }"
+  },
+  "tEA65+": {
+    "defaultMessage": "{count, plural, one {# 书籍} other {# 书籍} } 将被移除"
+  },
+  "tFx9of": {
+    "defaultMessage": "{count, plural, one {# 书籍} other {# 书籍} } 已从阅读列表移除: {readlist}"
+  },
+  "tLFumw": {
+    "defaultMessage": "年龄分级"
   },
   "tPD6YO": {
     "defaultMessage": "搜索系列"
   },
+  "tbNQ5v": {
+    "defaultMessage": "{rating}+"
+  },
+  "tc55Tn": {
+    "defaultMessage": "从合集中移除"
+  },
+  "tcXhCG": {
+    "defaultMessage": "锁定字段"
+  },
   "ti4Pzo": {
     "defaultMessage": "退出登录"
+  },
+  "tj5v0L": {
+    "defaultMessage": "添加到合集"
   },
   "tm9g8D": {
     "defaultMessage": "确定"
@@ -1853,8 +2501,26 @@
   "toP54Z": {
     "defaultMessage": "错误"
   },
+  "tqrq7S": {
+    "defaultMessage": "放弃更改或撤销上一次删除操作"
+  },
+  "u23YLt": {
+    "defaultMessage": "撤销"
+  },
+  "uBqZMx": {
+    "defaultMessage": "现有"
+  },
+  "uD9n5o": {
+    "defaultMessage": "书籍排序"
+  },
   "uGC9fD": {
     "defaultMessage": "选项"
+  },
+  "uOPuSH": {
+    "defaultMessage": "类型"
+  },
+  "uTuk/9": {
+    "defaultMessage": "文件大小"
   },
   "uW+6XG": {
     "defaultMessage": "简介"
@@ -1868,11 +2534,20 @@
   "uoc99F": {
     "defaultMessage": "在大型库或旧硬件上会消耗大量资源"
   },
+  "upo+2b": {
+    "defaultMessage": "候选"
+  },
   "ut2gmo": {
     "defaultMessage": "角色"
   },
   "uwFE74": {
     "defaultMessage": "扫描"
+  },
+  "v3beFf": {
+    "defaultMessage": "必须是有效的 BCP 47 语言代码"
+  },
+  "vOS8Dl": {
+    "defaultMessage": "已存在同名合集"
   },
   "vTqlcG": {
     "defaultMessage": "删除"
@@ -1880,17 +2555,32 @@
   "vXhkpo": {
     "defaultMessage": "删除文件"
   },
+  "vcA12h": {
+    "defaultMessage": "语言"
+  },
+  "veqjHc": {
+    "defaultMessage": "重做"
+  },
+  "viKuRl": {
+    "defaultMessage": "封面"
+  },
   "vkeTYG": {
     "defaultMessage": "书籍导入失败"
   },
   "vs88Ef": {
     "defaultMessage": "刷新库中所有媒体文件的元数据。根据库的大小，这可能需要很长时间。"
   },
+  "vtBARB": {
+    "defaultMessage": "生成的图片"
+  },
   "vvl9xP": {
     "defaultMessage": "清理垃圾"
   },
   "w2K5yu": {
     "defaultMessage": "阅读列表"
+  },
+  "wESuod": {
+    "defaultMessage": "未读"
   },
   "wJaip6": {
     "defaultMessage": "计算文件的哈希值"
@@ -1904,17 +2594,23 @@
   "wbH42A": {
     "defaultMessage": "不可用"
   },
-  "wmGcF+": {
-    "defaultMessage": "排除该年龄以上"
+  "wk+b55": {
+    "defaultMessage": "编辑"
+  },
+  "wwiazg": {
+    "defaultMessage": "剪贴板中未找到有效图片"
+  },
+  "x1MEvu": {
+    "defaultMessage": "发布日期"
+  },
+  "xAZMxz": {
+    "defaultMessage": "文件名"
   },
   "xPBqGY": {
     "defaultMessage": "删除系列"
   },
   "xSNdDU": {
     "defaultMessage": "此阅读列表将被删除<ul><li>系列和书籍不会被删除。</li></ul><b>此操作无法撤销。</b>"
-  },
-  "xYGXuU": {
-    "defaultMessage": "详细信息"
   },
   "xYp/8u": {
     "defaultMessage": "选择一本书"
@@ -1928,8 +2624,14 @@
   "xiyw1J": {
     "defaultMessage": "刷新所有元数据"
   },
+  "xjHL5K": {
+    "defaultMessage": "海报"
+  },
   "xpBvz8": {
     "defaultMessage": "发行年份"
+  },
+  "y1Fk/a": {
+    "defaultMessage": "无结果"
   },
   "y1P/K4": {
     "defaultMessage": "最新活动"
@@ -1937,8 +2639,14 @@
   "y3nPgO": {
     "defaultMessage": "对库文件执行深度扫描。根据库的大小，这可能需要很长时间。"
   },
+  "y5GoQ3": {
+    "defaultMessage": "打开用户导航菜单"
+  },
   "yDWzUi": {
     "defaultMessage": "API 密钥"
+  },
+  "yPygXa": {
+    "defaultMessage": "创建"
   },
   "yaa8so": {
     "defaultMessage": "扫描器"
@@ -1949,6 +2657,18 @@
   "yrE0Rx": {
     "defaultMessage": "详细信息"
   },
+  "yvQfma": {
+    "defaultMessage": "{count, plural, one {# 系列} other {# 系列} } 将被移除"
+  },
+  "yxnX5k": {
+    "defaultMessage": "启用 OAuth2 后隐藏登录字段"
+  },
+  "yyAGH1": {
+    "defaultMessage": "宽：{width}，高：{height}"
+  },
+  "z4ywpN": {
+    "defaultMessage": "合集系列已更新：{collection}"
+  },
   "z5sjUM": {
     "defaultMessage": "计算书籍文件哈希"
   },
@@ -1957,6 +2677,9 @@
   },
   "zRDVnR": {
     "defaultMessage": "大小"
+  },
+  "zWRhDm": {
+    "defaultMessage": "别名"
   },
   "zfQq+w": {
     "defaultMessage": "邮箱"

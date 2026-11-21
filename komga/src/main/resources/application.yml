@@ -33,18 +33,19 @@ komga:
   config-dir: \${user.home}/.komga
   tasks-db:
     file: \${komga.config-dir}/tasks.sqlite
-    # CUSTOM FORK: the task QUEUE is its own SQLite database with its own single write
-    # connection. Same fsync trap as the main DB: with FULL, every task insert/delete fsyncs,
-    # and a first-time ingest of 190k books queues ~570k tasks — 15 of 16 task threads end up
-    # parked in HikariPool while one thread holds the connection (500-700ms/task, days to drain).
     pragmas:
       synchronous: NORMAL
+  sessions-db:
+    file: \${komga.config-dir}/sessions.sqlite
+    pragmas:
+      synchronous: NORMAL
+  jdbc-session-enabled: true
 
   # comic-meta: external PostgreSQL metadata DB (read-only).
-  # MIGRATION: `db-path` (SQLite) is REMOVED. The PG schema is not flat:
+  # MIGRATION: db-path (SQLite) is REMOVED. The PG schema is not flat:
   #   source-id selects the TABLE PREFIX (jm / pica / wnacg; anything else is rejected)
   #   and tags live on the work, reached through volume -> work -> work_tags -> tags.
-  # Leave `enabled: false` unless you really have this DB; lookups then return null
+  # Leave enabled: false unless you really have this DB; lookups then return null
   # and Komga behaves exactly as before. NEVER commit a real password here.
   #
   # comic-meta:
@@ -56,6 +57,12 @@ komga:
   #   retry-cooldown-ms: 60000
 
 spring:
+  session:
+    jdbc:
+      # top of every hour
+      cleanup-cron: "0 0 * * * *"
+      initialize-schema: never
+    timeout: 7d
   flyway:
     enabled: true
     locations: classpath:db/migration/{vendor}
@@ -89,7 +96,11 @@ spring:
       max-in-memory-size: 10MB
 
 server:
-  servlet.session.timeout: 7d
+  servlet:
+    session:
+      cookie:
+        name: KOMGA-SESSION
+        max-age: \${spring.session.timeout}
   forward-headers-strategy: framework
   shutdown: graceful
   error:

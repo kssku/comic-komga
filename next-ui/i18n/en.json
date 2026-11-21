@@ -1,4 +1,8 @@
 {
+  "+6DtMH": {
+    "defaultMessage": "User interface",
+    "description": "Server settings: section header for UI settings"
+  },
   "+6YDzS": {
     "defaultMessage": "No data found",
     "description": "Known Duplicate Page Table: shown when table has no data"
@@ -6,6 +10,10 @@
   "+8++PW": {
     "defaultMessage": "Library created: {library}",
     "description": "Snackbar notification shown upon successful library creation"
+  },
+  "+C/+3o": {
+    "defaultMessage": "List cannot be empty",
+    "description": "Organize collection: empty state title - empty list"
   },
   "+PNCoe": {
     "defaultMessage": "Alternate title",
@@ -23,6 +31,10 @@
     "defaultMessage": "File path",
     "description": "Series view table: file path header"
   },
+  "+mvfpU": {
+    "defaultMessage": "{count, plural, one {# series} other {# series} } updated",
+    "description": "Snackbar notification shown upon successful bulk series metadata update"
+  },
   "+opDqu": {
     "defaultMessage": "Jump to",
     "description": "Pagination jump: label"
@@ -35,9 +47,21 @@
     "defaultMessage": "Server listening port",
     "description": "Server settings: input field for server port"
   },
+  "+sF9Fw": {
+    "defaultMessage": "Existing values",
+    "description": "Bulk edit input fields: existing values header in dropdown list"
+  },
+  "+sXZtI": {
+    "defaultMessage": "Close",
+    "description": "Edit entity dialog: close button text"
+  },
   "+y+9xL": {
     "defaultMessage": "Files over the size limit: {filenames}",
     "description": "Poster upload: error message when trying to upload file over the size limit"
+  },
+  "/4RRHN": {
+    "defaultMessage": "List cannot be empty",
+    "description": "Organize read list: empty state title - empty list"
   },
   "/5Gb4y": {
     "defaultMessage": "Delete",
@@ -87,6 +111,10 @@
     "defaultMessage": "IETF BCP 47 language tag",
     "description": "Form edit series: General - language, hint"
   },
+  "0ESsC0": {
+    "defaultMessage": "Continue with {provider}",
+    "description": "Login screen: oauth2 provider login button"
+  },
   "0ILHru": {
     "defaultMessage": "OK",
     "description": "Import reading list table filter: OK"
@@ -119,6 +147,10 @@
     "defaultMessage": "Remember Me",
     "description": "Login screen: Remember Me checkbox"
   },
+  "0c6DrH": {
+    "defaultMessage": "Restore initial value",
+    "description": "Bulk lock icon: tooltip - mixed"
+  },
   "0eIJ3K": {
     "defaultMessage": "Manual ordering",
     "description": "Collection view: manual ordering"
@@ -143,6 +175,10 @@
     "defaultMessage": "Rebuild search index",
     "description": "Task name: RebuildIndex"
   },
+  "13nnQg": {
+    "defaultMessage": "Use the new NextUI as default for this server",
+    "description": "Server settings: checkbox to use NextUI as the default UI"
+  },
   "14/Uh8": {
     "defaultMessage": "Import mode",
     "description": "Import books table: bottom bar: import mode selection dropdown label"
@@ -150,6 +186,10 @@
   "18OKhZ": {
     "defaultMessage": "Find books to convert",
     "description": "Task name: FindBooksToConvert"
+  },
+  "1A8Mc1": {
+    "defaultMessage": "Notable entities",
+    "description": "Form edit book: Notable Entities"
   },
   "1E0Duw": {
     "defaultMessage": "File size",
@@ -167,9 +207,21 @@
     "defaultMessage": "Edit series metadata",
     "description": "Edit series metadata dialog title"
   },
+  "1dgTdi": {
+    "defaultMessage": "Analyze",
+    "description": "Generic action: analyze"
+  },
+  "1hsKmu": {
+    "defaultMessage": "Character",
+    "description": "Notable entity kind: character"
+  },
   "1qIfds": {
     "defaultMessage": "Pinned",
     "description": "Library tab navigation: library selection: pinned"
+  },
+  "1z+Z+q": {
+    "defaultMessage": "Sharing labels",
+    "description": "Book view table: sharing labels  header"
   },
   "2Bh8F2": {
     "defaultMessage": "Latest",
@@ -239,6 +291,10 @@
     "defaultMessage": "library menu",
     "description": "Library menu button: aria label"
   },
+  "3lLmfX": {
+    "defaultMessage": "Collection",
+    "description": "Browsing context: collection"
+  },
   "3qQjnw": {
     "defaultMessage": "Language",
     "description": "Filter panel: Language"
@@ -246,6 +302,14 @@
   "3rNj7/": {
     "defaultMessage": "Click to confirm",
     "description": "Confirmation dialog: default checkbox label"
+  },
+  "3zkvDp": {
+    "defaultMessage": "Close",
+    "description": "Book picker dialog: Close button"
+  },
+  "40HXjy": {
+    "defaultMessage": "Cancel",
+    "description": "Metadata edition: add role dialog - cancel button"
   },
   "42E/dM": {
     "defaultMessage": "One-shots",
@@ -323,9 +387,21 @@
     "defaultMessage": "Epub",
     "description": "Form add/edit library: Scanner - file types: epub"
   },
+  "5Xt1ke": {
+    "defaultMessage": "Team",
+    "description": "Notable entity kind: team"
+  },
+  "5Zw5Zt": {
+    "defaultMessage": "Go to next series within collection",
+    "description": "Navigation within collection: next button tootlip"
+  },
   "5b2A0u": {
     "defaultMessage": "You will be redirected to the home page",
     "description": "Page not found view: error message subtitle"
+  },
+  "5nswuX": {
+    "defaultMessage": "Open classic UI",
+    "description": "Drawer menu for webui link"
   },
   "5rziSG": {
     "defaultMessage": "Unavailable",
@@ -335,9 +411,17 @@
     "defaultMessage": "Retry",
     "description": "Server unreachable error view: button"
   },
+  "5voJNm": {
+    "defaultMessage": "No restriction",
+    "description": "User creation/edit dialog: Age restriction field - no restriction"
+  },
   "5zPpyT": {
     "defaultMessage": "Age range",
     "description": "Filter by age rating: range label"
+  },
+  "69jd/r": {
+    "defaultMessage": "Remove from read list",
+    "description": "Remove from read list dialog: title"
   },
   "6F1ebQ": {
     "defaultMessage": "HTTP Server",
@@ -358,6 +442,14 @@
   "6WDISV": {
     "defaultMessage": "Page not found",
     "description": "Page not found view: error message title"
+  },
+  "6cwDEs": {
+    "defaultMessage": "Dark",
+    "description": "Theme: dark"
+  },
+  "6eAECF": {
+    "defaultMessage": "Library",
+    "description": "Library bottom sheet, subtitle"
   },
   "6f8q+L": {
     "defaultMessage": "Series",
@@ -403,6 +495,10 @@
     "defaultMessage": "All",
     "description": "Library tab navigation: library selection: all"
   },
+  "811PxA": {
+    "defaultMessage": "or",
+    "description": "Login screen: divider between login fields and oauth2 provider list"
+  },
   "81BMAQ": {
     "defaultMessage": "Import book metadata",
     "description": "Form add/edit library: Metadata - epub book metadata"
@@ -423,6 +519,10 @@
     "defaultMessage": "Tags",
     "description": "Combobox tags: label"
   },
+  "8LT9D4": {
+    "defaultMessage": "Cancel",
+    "description": "Metadata edition: add kind dialog - cancel button"
+  },
   "8NDqor": {
     "defaultMessage": "Letterer",
     "description": "Author role: letterer"
@@ -434,6 +534,10 @@
   "8P7Yn+": {
     "defaultMessage": "Age rating",
     "description": "Filter panel: Age rating"
+  },
+  "8Yd/3a": {
+    "defaultMessage": "Role name",
+    "description": "Metadata edition: add role dialog - input field label"
   },
   "8hC76W": {
     "defaultMessage": "Tasks",
@@ -455,9 +559,17 @@
     "defaultMessage": "Generate book thumbnail",
     "description": "Task name: GenerateBookThumbnail"
   },
+  "90k6a7": {
+    "defaultMessage": "Collection must contain at least one series",
+    "description": "Snackbar notification shown upon failed collection update"
+  },
   "90yqRq": {
     "defaultMessage": "add library",
     "description": "Add library button: aria label"
+  },
+  "98Q8V7": {
+    "defaultMessage": "Remove",
+    "description": "Remove from collection dialog: confirm button"
   },
   "9GaR82": {
     "defaultMessage": "General",
@@ -475,9 +587,17 @@
     "defaultMessage": "Delete User",
     "description": "Delete user dialog title"
   },
+  "9aVhJC": {
+    "defaultMessage": "CBZ",
+    "description": "Book file format: CBZ"
+  },
   "9dNd68": {
     "defaultMessage": "User uploaded",
     "description": "Poster card: type - user uploaded"
+  },
+  "9mujmD": {
+    "defaultMessage": "No release date",
+    "description": "Card subtitle: no release date"
   },
   "9oA9gw": {
     "defaultMessage": "Unpinned",
@@ -494,6 +614,10 @@
   "ALGXT9": {
     "defaultMessage": "Duplicate",
     "description": "Import reading list table filter: duplicate"
+  },
+  "AMQANB": {
+    "defaultMessage": "Add Custom Kind",
+    "description": "Metadata edition: add kind dialog title"
   },
   "AeA9Ka": {
     "defaultMessage": "No restriction",
@@ -526,6 +650,10 @@
   "BQmPch": {
     "defaultMessage": "Delete book",
     "description": "Task name: DeleteBook"
+  },
+  "BXkP7H": {
+    "defaultMessage": "Close",
+    "description": "Series picker dialog: Close button"
   },
   "Bewgy6": {
     "defaultMessage": "Series cover",
@@ -671,9 +799,17 @@
     "defaultMessage": "Delete files",
     "description": "Series delete dialog: confirm button"
   },
+  "DgXStw": {
+    "defaultMessage": "Go to previous series within collection",
+    "description": "Navigation within collection: previous button tootlip"
+  },
   "Dn4qvV": {
     "defaultMessage": "Restore defaults",
     "description": "Reorder sections: restore defaults button"
+  },
+  "Dsytsl": {
+    "defaultMessage": "Exclude from (inclusive)",
+    "description": "User creation/edit dialog: Age restriction field - exclude from"
   },
   "DwDa04": {
     "defaultMessage": "Scan interval",
@@ -703,6 +839,10 @@
     "defaultMessage": "Number",
     "description": "Book picker dialog: series books table header: number"
   },
+  "ELl0N9": {
+    "defaultMessage": "Books with missing posters can now be filtered directly in the main library view.",
+    "description": "Missing posters: text"
+  },
   "ELttw/": {
     "defaultMessage": "Empty trash",
     "description": "Library empty trash dialog: title"
@@ -722,6 +862,10 @@
   "EbhcQd": {
     "defaultMessage": "Details",
     "description": "Import books table header: details"
+  },
+  "EnHAAa": {
+    "defaultMessage": "PDF",
+    "description": "Book file format: PDF"
   },
   "Epp7Fi": {
     "defaultMessage": "Tags",
@@ -754,6 +898,10 @@
   "FVq9w5": {
     "defaultMessage": "Mylar (series.json)",
     "description": "Form add/edit library: Metadata - section header for mylar series.json"
+  },
+  "FX2bI8": {
+    "defaultMessage": "{count, plural, one {# series} other {# series} } removed from collection: {collection}",
+    "description": "Snackbar notification shown upon successful collection update"
   },
   "FZXkIP": {
     "defaultMessage": "Translator",
@@ -795,6 +943,10 @@
     "defaultMessage": "Use local artwork",
     "description": "Form add/edit library: Metadata - local artwork"
   },
+  "Gwmnm6": {
+    "defaultMessage": "Series",
+    "description": "Series bottom sheet, subtitle"
+  },
   "GyRV+/": {
     "defaultMessage": "You should enable this if the library is hosted on Google Drive",
     "description": "Form add/edit library: Scanner - Force directory modified time - information tooltip"
@@ -827,6 +979,10 @@
     "defaultMessage": "Email",
     "description": "Authentication Activity table header: email"
   },
+  "HIKKsB": {
+    "defaultMessage": "Profile",
+    "description": "User menu: profile"
+  },
   "HMbMJF": {
     "defaultMessage": "Date Time",
     "description": "History Table table header: Date Time"
@@ -847,6 +1003,10 @@
     "defaultMessage": "Close",
     "description": "Generate API key dialog: close button"
   },
+  "HaF+a6": {
+    "defaultMessage": "Libraries",
+    "description": "Libraries bottom sheet, subtitle"
+  },
   "HaWCi3": {
     "defaultMessage": "Settings",
     "description": "Drawer menu for Server > Settings"
@@ -866,6 +1026,10 @@
   "Hyz5su": {
     "defaultMessage": "Import book",
     "description": "Task name: ImportBook"
+  },
+  "I75Xgh": {
+    "defaultMessage": "Go to next book within series",
+    "description": "Book navigation within series: next button tootlip"
   },
   "I9L5Ag": {
     "defaultMessage": "SORT",
@@ -899,6 +1063,10 @@
     "defaultMessage": "Page number",
     "description": "Page comparison table: table header - page number"
   },
+  "If3RCw": {
+    "defaultMessage": "Will clear value on all selected items",
+    "description": "Bulk edit input fields: unset values hint"
+  },
   "Ih4MH9": {
     "defaultMessage": "Try to adjust the search",
     "description": "Search empty state: text"
@@ -922,6 +1090,10 @@
   "J44THG": {
     "defaultMessage": "Status",
     "description": "Import reading list table header: status message"
+  },
+  "J8l62K": {
+    "defaultMessage": "Add",
+    "description": "Metadata edition: add kind dialog - add button"
   },
   "J8rAqm": {
     "defaultMessage": "Release year",
@@ -947,6 +1119,10 @@
     "defaultMessage": "Number of pages",
     "description": "Book info: number of pages"
   },
+  "Ju97UA": {
+    "defaultMessage": "Read",
+    "description": "Generic action: read"
+  },
   "JwBlXP": {
     "defaultMessage": "Open",
     "description": "Book imported notification: button text to navigate to book"
@@ -963,6 +1139,14 @@
     "defaultMessage": "Age rating",
     "description": "Filter by age rating: select placeholder"
   },
+  "KPlFII": {
+    "defaultMessage": "Age restriction",
+    "description": "User creation/edit dialog: Age restriction section header"
+  },
+  "KTifVk": {
+    "defaultMessage": "All notable entities",
+    "description": "Notable entity filter: any kind"
+  },
   "Kie8HQ": {
     "defaultMessage": "Book",
     "description": "Import books table header: book"
@@ -970,6 +1154,10 @@
   "Ku7NJ+": {
     "defaultMessage": "The series files could not be found",
     "description": "Series view: files deleted"
+  },
+  "LBuB6T": {
+    "defaultMessage": "Add to read list",
+    "description": "Generic action: add to read list"
   },
   "LD5j8J": {
     "defaultMessage": "Requested series",
@@ -987,6 +1175,10 @@
     "defaultMessage": "Refresh series local artwork",
     "description": "Task name: RefreshSeriesLocalArtwork"
   },
+  "LOcuZ2": {
+    "defaultMessage": "Mark as read",
+    "description": "Generic action: mark as read"
+  },
   "LaMAsc": {
     "defaultMessage": "Authentication Activity",
     "description": "Authentication Activity table global header"
@@ -1002,6 +1194,14 @@
   "Lto2Lg": {
     "defaultMessage": "Must start with '/', not end with '/-_', and contain only '/-_a-z0-9'",
     "description": "Server settings: error message when server context path is invalid"
+  },
+  "M3OTuv": {
+    "defaultMessage": "Multiple values",
+    "description": "Bulk edit input fields: multiple values placeholder"
+  },
+  "M4STMh": {
+    "defaultMessage": "Undo",
+    "description": "Organize list: Undo button tooltip"
   },
   "MC2JtF": {
     "defaultMessage": "All",
@@ -1051,6 +1251,10 @@
     "defaultMessage": "Kobo sync forced: {apiKeyComment}",
     "description": "Snackbar notification shown upon successful API key force sync"
   },
+  "Nahedl": {
+    "defaultMessage": "Add",
+    "description": "Metadata edition: add role dialog - add button"
+  },
   "NasBHg": {
     "defaultMessage": "Date read",
     "description": "Sort label: readDate"
@@ -1058,6 +1262,10 @@
   "Nb0V0p": {
     "defaultMessage": "Missing Posters",
     "description": "Drawer menu for Media > Missing Posters"
+  },
+  "NgRz9T": {
+    "defaultMessage": "Permissions",
+    "description": "User creation/edit dialog: Permissions section header"
   },
   "NhIart": {
     "defaultMessage": "Delete book files",
@@ -1131,9 +1339,17 @@
     "defaultMessage": "Book metadata updated: {book}",
     "description": "Snackbar notification shown upon successful book metadata update"
   },
+  "P9B8fE": {
+    "defaultMessage": "Go to previous book within series",
+    "description": "Book navigation within series: previous button tootlip"
+  },
   "PTr5Wc": {
     "defaultMessage": "Check that your Komga server is running",
     "description": "Server unreachable error view: error message subtitle"
+  },
+  "PUU04H": {
+    "defaultMessage": "Fill poster containers",
+    "description": "User menu: stretch posters"
   },
   "PguYSD": {
     "defaultMessage": "Overwrite existing read list",
@@ -1142,6 +1358,10 @@
   "Pj29A+": {
     "defaultMessage": "Required for detecting duplicate pages",
     "description": "Form add/edit library: Options - hash pages - information tooltip"
+  },
+  "Po0Z4Z": {
+    "defaultMessage": "Read list",
+    "description": "Read list bottom sheet, subtitle"
   },
   "Pp3+1S": {
     "defaultMessage": "Status",
@@ -1154,6 +1374,10 @@
   "Q3XcC5": {
     "defaultMessage": "All",
     "description": "Series list filter: show both multi-volume series and single-volume works"
+  },
+  "Q7tJAG": {
+    "defaultMessage": "Read list",
+    "description": "Container chip, subtitle for read list"
   },
   "QALnuE": {
     "defaultMessage": "File type",
@@ -1174,6 +1398,14 @@
   "Qxij/I": {
     "defaultMessage": "Deleted page",
     "description": "History Table, expansion panel for deleted page: alt description for deleted page"
+  },
+  "Qz1UTX": {
+    "defaultMessage": "Close",
+    "description": "File name picker dialog: Close button"
+  },
+  "RCUCFa": {
+    "defaultMessage": "Read list must contain at least one book",
+    "description": "Snackbar notification shown upon failed readlist update"
   },
   "REmxIM": {
     "defaultMessage": "Modified",
@@ -1199,21 +1431,53 @@
     "defaultMessage": "Expand sidebar",
     "description": "Sidebar button: tooltip expand"
   },
+  "RcbD73": {
+    "defaultMessage": "Book {number}",
+    "description": "Book navigation siblings menu: book number in series"
+  },
+  "Rgl4jp": {
+    "defaultMessage": "{count, plural, one {# book} other {# books} } updated",
+    "description": "Snackbar notification shown upon successful bulk book metadata update"
+  },
   "Rm52xk": {
     "defaultMessage": "Welcome to Komga",
     "description": "No libraries view: title"
+  },
+  "Rt/kZN": {
+    "defaultMessage": "{first} and {rest, plural, one {# other book} other {# other books} }",
+    "description": "Edit bulk book metadata dialog subtitle"
+  },
+  "Rw2Iwj": {
+    "defaultMessage": "Go to next book within read list",
+    "description": "Book navigation within read list: next button tootlip"
   },
   "RwuMl5": {
     "defaultMessage": "Automatically repair incorrect file extensions",
     "description": "Form add/edit library: Options - repair extensions"
   },
+  "S1/qO0": {
+    "defaultMessage": "Collection",
+    "description": "Collection bottom sheet, subtitle"
+  },
   "S39lnB": {
     "defaultMessage": "Year rating",
     "description": "Filter by release year: select placeholder"
   },
+  "S9SjlA": {
+    "defaultMessage": "Selected",
+    "description": "Poster filter: subheader for selected section"
+  },
+  "SF1C8o": {
+    "defaultMessage": "Save and close",
+    "description": "Edit entity dialog: confirmation button text for last entity"
+  },
   "SIfmpC": {
     "defaultMessage": "Select series",
     "description": "Series picker dialog: title"
+  },
+  "ST34jK": {
+    "defaultMessage": "Private reading session",
+    "description": "Generic action: read incognito"
   },
   "STdfYg": {
     "defaultMessage": "Analyze pages dimensions",
@@ -1250,6 +1514,10 @@
   "TAVSfO": {
     "defaultMessage": "Books count",
     "description": "Sort label: booksCount"
+  },
+  "TCjAyg": {
+    "defaultMessage": "{first} and {rest, plural, one {# other series} other {# other series} }",
+    "description": "Edit bulk series metadata dialog subtitle"
   },
   "TG7prC": {
     "defaultMessage": "Date added",
@@ -1327,9 +1595,17 @@
     "defaultMessage": "Release date",
     "description": "Sort label: metadata.releaseDate"
   },
+  "Ulohnz": {
+    "defaultMessage": "Mark as unread",
+    "description": "Generic action: mark as unread"
+  },
   "UoaxO7": {
     "defaultMessage": "Book will be upgraded",
     "description": "Import books: status message: book will be upgraded"
+  },
+  "UsTdV2": {
+    "defaultMessage": "Sharing labels",
+    "description": "Series view table: sharing labels header"
   },
   "Usohru": {
     "defaultMessage": "Browse",
@@ -1343,6 +1619,10 @@
     "defaultMessage": "Shared Libraries",
     "description": "User creation/edit dialog: Shared Libraries field"
   },
+  "UxBl+J": {
+    "defaultMessage": "Light",
+    "description": "Theme: light"
+  },
   "V/OYJE": {
     "defaultMessage": "User deleted: {email}",
     "description": "Snackbar notification shown upon successful user deletion"
@@ -1350,6 +1630,10 @@
   "V3wgcu": {
     "defaultMessage": "Duplicate page",
     "description": "Duplicate Page Hash Matches Table: alt description for thumbnail"
+  },
+  "V8tkJa": {
+    "defaultMessage": "Automatic OAuth2 login",
+    "description": "Server settings: checkbox to set automatic OAuth2 login"
   },
   "VHe28r": {
     "defaultMessage": "Date updated",
@@ -1447,6 +1731,10 @@
     "defaultMessage": "Requested number",
     "description": "Import reading list table header: requested number"
   },
+  "WyueEI": {
+    "defaultMessage": "Edit series metadata",
+    "description": "Edit bulk series metadata dialog title"
+  },
   "X/Z8x+": {
     "defaultMessage": "Make sure to copy your API key now. You won't be able to see it again!",
     "description": "Generate API key dialog: message shown after key creation"
@@ -1495,6 +1783,10 @@
     "defaultMessage": "Please type <b>{validateText}</b> to confirm.",
     "description": "Confirmation dialog: default hint to retype validation text"
   },
+  "Xq4kkn": {
+    "defaultMessage": "Go to previous book within read list",
+    "description": "Book navigation within read list: previous button tootlip"
+  },
   "XuqK4C": {
     "defaultMessage": "Unknown Duplicates",
     "description": "Unknown Duplicate Page Table global header"
@@ -1502,6 +1794,10 @@
   "Xx+ITC": {
     "defaultMessage": "My activity",
     "description": "Drawer menu for My Account > Activity"
+  },
+  "Xxk+hl": {
+    "defaultMessage": "Appears in",
+    "description": "Container chip, showing in what collection/readlist a series or book appears"
   },
   "Xxu514": {
     "defaultMessage": "Delete series files",
@@ -1539,9 +1835,21 @@
     "defaultMessage": "Edit collection",
     "description": "Edit collection dialog title"
   },
+  "YaCWYs": {
+    "defaultMessage": "Media analysis has moved",
+    "description": "Media analysis: title"
+  },
   "YbkrN9": {
     "defaultMessage": "IP",
     "description": "Authentication Activity table header: IP address"
+  },
+  "YeFgyc": {
+    "defaultMessage": "Books in error can now be filtered directly in the main library view.",
+    "description": "Media analysis: text"
+  },
+  "YeUvoE": {
+    "defaultMessage": "Custom role...",
+    "description": "Metadata edition: add role menu - custom role"
   },
   "Yf4DJ2": {
     "defaultMessage": "User Interface",
@@ -1571,6 +1879,10 @@
     "defaultMessage": "Complete",
     "description": "Filter: complete"
   },
+  "ZGppaw": {
+    "defaultMessage": "Series",
+    "description": "Browsing context: series"
+  },
   "ZPuFVu": {
     "defaultMessage": "General",
     "description": "Form edit series: General"
@@ -1591,6 +1903,10 @@
     "defaultMessage": "Edit User",
     "description": "Edit user dialog title"
   },
+  "ZiTv+F": {
+    "defaultMessage": "Missing posters has moved",
+    "description": "Missing posters: title"
+  },
   "ZnjyI3": {
     "defaultMessage": "Show less",
     "description": "Expendable text: show less"
@@ -1602,6 +1918,14 @@
   "Zozcfh": {
     "defaultMessage": "Source",
     "description": "Authentication Activity table header: Source"
+  },
+  "Zzqa/A": {
+    "defaultMessage": "Remove from collection",
+    "description": "Generic action: remove from collection"
+  },
+  "a+32Gi": {
+    "defaultMessage": "Allow up to (inclusive)",
+    "description": "User creation/edit dialog: Age restriction field - allow up to"
   },
   "a5MYiP": {
     "defaultMessage": "Posters",
@@ -1638,6 +1962,10 @@
   "aYalqk": {
     "defaultMessage": "Select some books",
     "description": "Create read list error: user need to select at least 1 book before creating a read list"
+  },
+  "aeEb6w": {
+    "defaultMessage": "Discard the changes or undo your last deletion",
+    "description": "Organize read list: empty state text - empty list"
   },
   "afXGQS": {
     "defaultMessage": "Root directory",
@@ -1835,6 +2163,10 @@
     "defaultMessage": "Book",
     "description": "Duplicate Page Hash Matches Table header: book file name"
   },
+  "bRAV2F": {
+    "defaultMessage": "Location",
+    "description": "Notable entity kind: location"
+  },
   "bRxSgh": {
     "defaultMessage": "Manually",
     "description": "Form edit read list: General - books ordering: manually"
@@ -1842,6 +2174,10 @@
   "bSoeY6": {
     "defaultMessage": "Destination name",
     "description": "Import books table header: destination name"
+  },
+  "bWiqyw": {
+    "defaultMessage": "Kind name",
+    "description": "Metadata edition: add kind dialog - input field label"
   },
   "bk1tX8": {
     "defaultMessage": "The library will be deleted from this server.<ul><li>Series and books will be deleted, along with their metadata and read progress.</li><li>Media files will not be deleted from disk.</li></ul><b>This action cannot be undone.</b>",
@@ -1931,6 +2267,14 @@
     "defaultMessage": "No activity",
     "description": "Task Indicator menu: no activity"
   },
+  "dN5GoW": {
+    "defaultMessage": "Book",
+    "description": "Book bottom sheet, subtitle"
+  },
+  "dNnqm2": {
+    "defaultMessage": "Edit books metadata",
+    "description": "Edit bulk book metadata dialog title"
+  },
   "dP6SpT": {
     "defaultMessage": "By name",
     "description": "Form edit collection: General - series ordering: by name"
@@ -1966,6 +2310,10 @@
   "dipMGb": {
     "defaultMessage": "Create",
     "description": "Import reading list: bottom bar: create button"
+  },
+  "dto0D+": {
+    "defaultMessage": "Organize",
+    "description": "Generic action: edit elements"
   },
   "dx9s7S": {
     "defaultMessage": "Created",
@@ -2283,6 +2631,10 @@
     "defaultMessage": "No data found",
     "description": "Duplicate Page Hash Matches Table: shown when table has no data"
   },
+  "gjlnkj": {
+    "defaultMessage": "System",
+    "description": "Theme: system"
+  },
   "gojrIJ": {
     "defaultMessage": "Select series",
     "description": "Import reading list table: series cell: select series button"
@@ -2343,6 +2695,10 @@
     "defaultMessage": "Latest activity",
     "description": "API Key table header: key latest activity"
   },
+  "hkbgs/": {
+    "defaultMessage": "Add Custom Role",
+    "description": "Metadata edition: add role dialog title"
+  },
   "hrh5Rn": {
     "defaultMessage": "Upgrade",
     "description": "Import books table: book upgrade button"
@@ -2367,9 +2723,17 @@
     "defaultMessage": "Remember me duration (in days)",
     "description": "Server settings: input field for remember me duration"
   },
+  "iGdw+C": {
+    "defaultMessage": "Next",
+    "description": "Edit item dialog: next item button"
+  },
   "iNBto3": {
     "defaultMessage": "Proxy unhandled requests to Kobo Store",
     "description": "Server settings: checkbox to enable Kobo Store proxying for Kobo Sync "
+  },
+  "iQKrku": {
+    "defaultMessage": "EPUB",
+    "description": "Book file format: EPUB"
   },
   "iVYrha": {
     "defaultMessage": "General",
@@ -2419,13 +2783,25 @@
     "defaultMessage": "Analyze",
     "description": "Library analyze dialog: confirm button"
   },
+  "jYOsNC": {
+    "defaultMessage": "Unselected",
+    "description": "Poster filter: subheader for unselected section"
+  },
   "jeXb2z": {
     "defaultMessage": "Media type",
     "description": "Book info: media type"
   },
+  "jm9oYh": {
+    "defaultMessage": "Any type",
+    "description": "Poster type - any type"
+  },
   "jnjpZy": {
     "defaultMessage": "Local file",
     "description": "Poster card: status - local file"
+  },
+  "jpdD8R": {
+    "defaultMessage": "Theme",
+    "description": "User menu: Theme section header"
   },
   "jyrqhz": {
     "defaultMessage": "Barcode",
@@ -2462,6 +2838,10 @@
   "kHmCVM": {
     "defaultMessage": "Scan library",
     "description": "Task name: ScanLibrary"
+  },
+  "kMw47z": {
+    "defaultMessage": "Remove from read list",
+    "description": "Generic action: remove from read list"
   },
   "kXuNY8": {
     "defaultMessage": "Add page to selection",
@@ -2515,6 +2895,10 @@
     "defaultMessage": "Mark as",
     "description": "Unknown Duplicate Page: selection action button"
   },
+  "lFWPpj": {
+    "defaultMessage": "Add kind",
+    "description": "Metadata edition: add kind button"
+  },
   "lPZ5hy": {
     "defaultMessage": "Close",
     "description": "Reorder library drawer: close button"
@@ -2527,9 +2911,21 @@
     "defaultMessage": "Ok",
     "description": "Form add/edit library: General - root directory selection dialog confirmation button label"
   },
+  "ldAVd7": {
+    "defaultMessage": "Read list",
+    "description": "Browsing context: read list"
+  },
+  "lkoTf7": {
+    "defaultMessage": "CBR",
+    "description": "Book file format: CBR"
+  },
   "lt7Tru": {
     "defaultMessage": "Series",
     "description": "Library navigation: series"
+  },
+  "lu0qxx": {
+    "defaultMessage": "Remove",
+    "description": "Remove from read list dialog: confirm button"
   },
   "lvCpSX": {
     "defaultMessage": "Actions",
@@ -2555,6 +2951,10 @@
     "defaultMessage": "Creation date",
     "description": "API Key table header: key creation date"
   },
+  "mQ3hSR": {
+    "defaultMessage": "Label restrictions",
+    "description": "User creation/edit dialog: label restrictions section header"
+  },
   "mtUacw": {
     "defaultMessage": "Edit book metadata",
     "description": "Edit book metadata dialog title"
@@ -2562,6 +2962,10 @@
   "n0TnQ2": {
     "defaultMessage": "Server unreachable",
     "description": "Server unreachable error view: error message title"
+  },
+  "n0tWL5": {
+    "defaultMessage": "Bulk edit",
+    "description": "Generic action: edit bulk"
   },
   "n0yuoo": {
     "defaultMessage": "Activity",
@@ -2587,6 +2991,14 @@
     "defaultMessage": "One shot",
     "description": "Import books table: book cell: one shot indicator"
   },
+  "nWgSSS": {
+    "defaultMessage": "Collection",
+    "description": "Container chip, subtitle for collection"
+  },
+  "nXEvYQ": {
+    "defaultMessage": "Save and next",
+    "description": "Edit entity dialog: confirmation button text for all entities except last"
+  },
   "nXFVsQ": {
     "defaultMessage": "Compute hash for KOReader",
     "description": "Form add/edit library: Options - koreader hash"
@@ -2594,6 +3006,10 @@
   "nXWSTf": {
     "defaultMessage": "Name",
     "description": "Sort label: metadata.title"
+  },
+  "nYtEQI": {
+    "defaultMessage": "Refresh metadata",
+    "description": "Generic action: refresh metadata"
   },
   "nhrFtV": {
     "defaultMessage": "Unavailable",
@@ -2655,6 +3071,14 @@
     "defaultMessage": "Thumbnail",
     "description": "Unknown Duplicate Page Table header: thumbnail"
   },
+  "pBivnm": {
+    "defaultMessage": "No value",
+    "description": "Bulk edit input fields: no value placeholder"
+  },
+  "pCBNlA": {
+    "defaultMessage": "Library",
+    "description": "Browsing context: library"
+  },
   "pENCUD": {
     "defaultMessage": "Cancel",
     "description": "Confirmation dialog: Cancel button"
@@ -2662,6 +3086,14 @@
   "pHdVzh": {
     "defaultMessage": "Delete empty collections after scan",
     "description": "Server settings: checkbox to delete empty collections after scan"
+  },
+  "pHycdf": {
+    "defaultMessage": "The book file is yet to be analyzed",
+    "description": "Book view: media unknown"
+  },
+  "pK72Vk": {
+    "defaultMessage": "Previous",
+    "description": "Edit item dialog: previous item button"
   },
   "pR3VdQ": {
     "defaultMessage": "Series",
@@ -2691,6 +3123,10 @@
     "defaultMessage": "Sort number",
     "description": "Form edit book: General - book sort number"
   },
+  "q6fppQ": {
+    "defaultMessage": "Delete",
+    "description": "Generic action: delete"
+  },
   "q7gxLw": {
     "defaultMessage": "The user account will be deleted from this server.<ul><li>The read progress for this user account will be permanently deleted.</li><li>Authentication activity for this user will be permanently deleted.</li></ul><b>This action cannot be undone.</b>",
     "description": "User deletion warning notice"
@@ -2699,9 +3135,21 @@
     "defaultMessage": "Unknown",
     "description": "Drawer menu for Media > Duplicate Pages > Unknown"
   },
+  "qlImvg": {
+    "defaultMessage": "Restore to default",
+    "description": "Sort panel: restore icon tootlip"
+  },
+  "qq92EF": {
+    "defaultMessage": "Unlock field",
+    "description": "Bulk lock icon: tooltip - unlock"
+  },
   "r/G7j0": {
     "defaultMessage": "Number",
     "description": "Sort label: metadata.numberSort"
+  },
+  "r48oBl": {
+    "defaultMessage": "Organize read list",
+    "description": "Edit readlist elements dialog title"
   },
   "r5O+/d": {
     "defaultMessage": "Genre",
@@ -2759,6 +3207,10 @@
     "defaultMessage": "{rating}+",
     "description": "Series view: age rating chip"
   },
+  "roy9ap": {
+    "defaultMessage": "Works only if a single OAuth2 provider is configured",
+    "description": "Server settings: checkbox to set automatic OAuth2 login - information tooltip"
+  },
   "rrF/Z2": {
     "defaultMessage": "Name",
     "description": "Import reading list: bottom bar: reading list name"
@@ -2766,6 +3218,10 @@
   "rtOXU6": {
     "defaultMessage": "Book details",
     "description": "Book details dialog title"
+  },
+  "ruWj+g": {
+    "defaultMessage": "Download",
+    "description": "Generic action: download"
   },
   "rw/Dkw": {
     "defaultMessage": "User Interface",
@@ -2786,6 +3242,10 @@
   "sGsWvI": {
     "defaultMessage": "Change password",
     "description": "User details screen: change password button"
+  },
+  "sMmke1": {
+    "defaultMessage": "Notable entities",
+    "description": "Filter panel sub-section: Notable entities"
   },
   "sNSGMQ": {
     "defaultMessage": "Drag and drop images here",
@@ -2831,6 +3291,10 @@
     "defaultMessage": "Refresh book local artwork",
     "description": "Task name: RefreshBookLocalArtwork"
   },
+  "sutqn3": {
+    "defaultMessage": "Custom kind...",
+    "description": "Metadata edition: add kind menu - custom kind"
+  },
   "syF0Ap": {
     "defaultMessage": "Size",
     "description": "Known Duplicate Page Table header: size"
@@ -2838,6 +3302,10 @@
   "t0Tkmy": {
     "defaultMessage": "Force Kobo sync",
     "description": "Tooltip for the force Kobo sync button in the API Key table"
+  },
+  "t38TG7": {
+    "defaultMessage": "Read list books updated: {readlist}",
+    "description": "Snackbar notification shown upon successful readlist update"
   },
   "t3B+Qv": {
     "defaultMessage": "Remove hashed pages",
@@ -2859,6 +3327,14 @@
     "defaultMessage": "{count, plural, one {# selected} other {# selected} }",
     "description": "Selection bar: count of items"
   },
+  "tEA65+": {
+    "defaultMessage": "{count, plural, one {# book} other {# books} } will be removed",
+    "description": "Remove from read list dialog: warning"
+  },
+  "tFx9of": {
+    "defaultMessage": "{count, plural, one {# book} other {# books} } removed from read list: {readlist}",
+    "description": "Snackbar notification shown upon successful readlist update"
+  },
   "tLFumw": {
     "defaultMessage": "Age rating",
     "description": "Form edit series: General - series age rating"
@@ -2871,9 +3347,21 @@
     "defaultMessage": "{rating}+",
     "description": "Book view: age rating chip"
   },
+  "tc55Tn": {
+    "defaultMessage": "Remove from collection",
+    "description": "Remove from collection dialog: title"
+  },
+  "tcXhCG": {
+    "defaultMessage": "Lock field",
+    "description": "Bulk lock icon: tooltip - lock"
+  },
   "ti4Pzo": {
     "defaultMessage": "Logout",
     "description": "Drawer menu for Logout"
+  },
+  "tj5v0L": {
+    "defaultMessage": "Add to collection",
+    "description": "Generic action: add to collection"
   },
   "tm9g8D": {
     "defaultMessage": "Ok",
@@ -2886,6 +3374,10 @@
   "toP54Z": {
     "defaultMessage": "Error",
     "description": "Import reading list table filter: Error"
+  },
+  "tqrq7S": {
+    "defaultMessage": "Discard the changes or undo your last deletion",
+    "description": "Organize collection: empty state text - empty list"
   },
   "u23YLt": {
     "defaultMessage": "Undo",
@@ -2955,6 +3447,18 @@
     "defaultMessage": "Delete file",
     "description": "Book menu: manage > delete file"
   },
+  "vcA12h": {
+    "defaultMessage": "Language",
+    "description": "User menu: language"
+  },
+  "veqjHc": {
+    "defaultMessage": "Redo",
+    "description": "Organize list: Redo button tooltip"
+  },
+  "viKuRl": {
+    "defaultMessage": "Poster",
+    "description": "Filter panel: Poster"
+  },
   "vkeTYG": {
     "defaultMessage": "Book import failed",
     "description": "Book imported notification: import failure: title"
@@ -2975,6 +3479,10 @@
     "defaultMessage": "Read Lists",
     "description": "Library navigation: read lists"
   },
+  "wESuod": {
+    "defaultMessage": "Unread",
+    "description": "Card subtitle: unread"
+  },
   "wJaip6": {
     "defaultMessage": "Compute hash for files",
     "description": "Form add/edit library: Options - hash files"
@@ -2990,6 +3498,10 @@
   "wbH42A": {
     "defaultMessage": "Unavailable",
     "description": "Series card subtitle: unavailable"
+  },
+  "wk+b55": {
+    "defaultMessage": "Edit",
+    "description": "Generic action: edit"
   },
   "wmGcF+": {
     "defaultMessage": "Exclude over",
@@ -3059,6 +3571,10 @@
     "defaultMessage": "Performs a deep scan of the library files. Depending on your library size, this may take a long time.",
     "description": "Library deep scan dialog: warning text"
   },
+  "y5GoQ3": {
+    "defaultMessage": "Open user navigation menu",
+    "description": "Application bar: user icon tooltip"
+  },
   "yDWzUi": {
     "defaultMessage": "API Keys",
     "description": "API Key table global header"
@@ -3079,9 +3595,21 @@
     "defaultMessage": "Details",
     "description": "Book picker dialog: series books table header: book details"
   },
+  "yvQfma": {
+    "defaultMessage": "{count, plural, one {# series} other {# series} } will be removed",
+    "description": "Remove from collection dialog: warning"
+  },
+  "yxnX5k": {
+    "defaultMessage": "Hide login fields if OAuth2 is enabled",
+    "description": "Server settings: checkbox to hide login fields if OAuth2 is enabled"
+  },
   "yyAGH1": {
     "defaultMessage": "w: {width}, h: {height}",
     "description": "Page comparison: file dimensions"
+  },
+  "z4ywpN": {
+    "defaultMessage": "Collection series updated: {collection}",
+    "description": "Snackbar notification shown upon successful collection update"
   },
   "z5sjUM": {
     "defaultMessage": "Hash book file",

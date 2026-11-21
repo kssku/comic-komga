@@ -27,13 +27,7 @@
           ref="fieldTitleSortRef"
           v-model="model.titleSort"
           :rules="[rules.required()]"
-          :label="
-            $formatMessage({
-              description: 'Form edit series: General - series sort title',
-              defaultMessage: 'Sort title',
-              id: 'ayrmyn',
-            })
-          "
+          :label="$formatMessage(commonMessages.seriesFormGeneralTitleSort)"
         >
           <template #prepend>
             <LockIcon v-model="model.titleSortLock" />
@@ -87,13 +81,7 @@
           ref="fieldStatusRef"
           v-model="model.status"
           :items="seriesStatusOptions"
-          :label="
-            $formatMessage({
-              description: 'Form edit series: General - series status',
-              defaultMessage: 'Publishing status',
-              id: '4CIw7i',
-            })
-          "
+          :label="$formatMessage(commonMessages.seriesFormGeneralStatus)"
         >
           <template #prepend>
             <LockIcon v-model="model.statusLock" />

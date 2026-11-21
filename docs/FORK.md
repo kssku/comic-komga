@@ -1,9 +1,28 @@
-# Komga Fork — 1.0
+# Komga Fork — 1.30.1
 
 > 本仓库是 [gotson/komga](https://github.com/gotson/komga) 的个人 fork。
 > 目的：让 Komga 在 **115 网盘（CloudDrive2 FUSE 挂载）** 上可用。
 >
 > 本文档只记录**代码与磁盘能证实的事实**。任何推测都明确标注为「待确认」。
+
+## 0. 与上游的关系（2026-11-22）
+
+- 基线：官方 **1.30.1**（`db2ad643`），fork 的改动叠在其上
+- 合并脚本：`git merge upstream/master`，冲突 11 个文件，全部手工解
+- 验证：`:komga:test` 1051 个用例，仅 2 个失败（`TaskProcessorTest`，升级前 master 上就挂，
+  原因是 springmockk 的 mock 没替换真实 bean，与本 fork 无关）
+
+### 0.1 升级已有库
+
+fork 自己维护迁移，时间戳可能与稍后进入的上游迁移交错（fork `V20261122` vs 上游 `V20261002`）。
+因此 `application.yml` 默认开了 `spring.flyway.out-of-order: true`，任务库的 Flyway
+（`FlywayTasksMigrationInitializer`）也跟着这个开关走。全新安装不受影响。
+
+### 0.2 合并后待重做
+
+**单行本 / 多卷切换视图**：`next-ui/src/pages/libraries/[viewId]/series.vue` 上游已重构成
+`ItemBrowser` + `asItems` 结构，fork 原来的「单行本用 BookCard 渲染」工具栏与卡片分叉
+在合并时用了官方版本，**该视图暂时丢失**，需在新结构上重做。
 
 ---
 

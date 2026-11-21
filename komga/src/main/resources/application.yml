@@ -67,6 +67,11 @@ spring:
     enabled: true
     locations: classpath:db/migration/{vendor}
     mixed: true
+    # CUSTOM FORK: this fork maintains its own migrations next to upstream's. A fork migration
+    # can carry a NEWER timestamp than an upstream one that lands later (fork V20261122 vs
+    # upstream V20261002), which makes an existing installation fail Flyway validation at
+    # startup. Out-of-order keeps such upgrades working; a from-scratch install is unaffected.
+    out-of-order: true
     placeholders:
       library-file-hashing: \${komga.file-hashing:true}
       library-scan-startup: \${komga.libraries-scan-startup:false}

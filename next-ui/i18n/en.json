@@ -549,7 +549,7 @@
   },
   "8kylzj": {
     "defaultMessage": "Delete",
-    "description": "Multiple entities deletion dialog: confirm button"
+    "description": "Known Duplicate Page Table: delete confirmation button"
   },
   "8xonXJ": {
     "defaultMessage": "Analyzes all the media files in the library. The analysis captures information about the media. Depending on your library size, this may take a long time.",
@@ -878,6 +878,10 @@
   "EzOmuX": {
     "defaultMessage": "Created",
     "description": "Known Duplicate Page Table header: creation date"
+  },
+  "F3Jb1o": {
+    "defaultMessage": "This deletes {count} page(s) ({size}) from the book files themselves. Files on the library mount are rewritten and cannot be restored from Komga.",
+    "description": "Known Duplicate Page Table: delete confirmation subtitle, warns that files are modified on disk"
   },
   "FBGnzt": {
     "defaultMessage": "A read list with that name already exists",
@@ -3414,6 +3418,10 @@
   "uY7N6Z": {
     "defaultMessage": "Media profile",
     "description": "Filter panel: Media profile"
+  },
+  "uZn4hH": {
+    "defaultMessage": "Delete duplicate pages",
+    "description": "Known Duplicate Page Table: delete confirmation title"
   },
   "uoc99F": {
     "defaultMessage": "Can consume lots of resources on large libraries or slow hardware",

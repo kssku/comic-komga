@@ -178,7 +178,7 @@
             deletionRequests[item.hash]?.success
           "
           :loading="deletionRequests[item.hash]?.isLoading"
-          @click="deletePageHashMatches(item.hash)"
+          @click="confirmDeletePageHashMatches(item)"
         />
       </v-btn-group>
     </template>
@@ -204,7 +204,7 @@ import { pageHashesKnownQuery } from '@/colada/page-hashes'
 import { getFileSize } from '@/functions/filesize'
 import { pageHashKnownThumbnailUrl } from '@/api/images'
 import { storeToRefs } from 'pinia'
-import { useDialogsStore } from '@/stores/dialogs'
+import { type DialogResult, useDialogsStore } from '@/stores/dialogs'
 import { useDisplay } from 'vuetify'
 import { VImg } from 'vuetify/components'
 import MatchTable from '@/components/pageHash/MatchTable.vue'
@@ -220,7 +220,7 @@ import {
 const intl = useIntl()
 const display = useDisplay()
 const messagesStore = useMessagesStore()
-const { simple: dialogSimple } = storeToRefs(useDialogsStore())
+const { simple: dialogSimple, confirm: dialogConfirm } = storeToRefs(useDialogsStore())
 
 const sortBy = ref<VSortItem[]>([{ key: 'deleteSize', order: 'desc' }])
 
@@ -373,6 +373,41 @@ function showDialogMatches(hash: string) {
 
 //region Manual deletion
 const deletionRequests = ref<Record<string, { success?: boolean; isLoading: boolean }>>({})
+// CUSTOM FORK: deleting duplicate pages rewrites the CBZ files on the mount (on this deployment
+// that means writing to the 115 cloud drive). A single click used to do that, with no confirmation.
+function confirmDeletePageHashMatches(item: PageHashKnownDto) {
+  if (deletionRequests.value[item.hash]?.success) return
+
+  dialogConfirm.value.dialogProps = {
+    title: intl.formatMessage({
+      description: 'Known Duplicate Page Table: delete confirmation title',
+      defaultMessage: 'Delete duplicate pages',
+      id: 'uZn4hH',
+    }),
+    subtitle: intl.formatMessage(
+      {
+        description:
+          'Known Duplicate Page Table: delete confirmation subtitle, warns that files are modified on disk',
+        defaultMessage:
+          'This deletes {count} page(s) ({size}) from the book files themselves. Files on the library mount are rewritten and cannot be restored from Komga.',
+        id: 'F3Jb1o',
+      },
+      { count: item.deleteCount, size: getFileSize((item.size || 0) * item.deleteCount) },
+    ),
+    maxWidth: 600,
+    color: 'error',
+    okText: intl.formatMessage({
+      description: 'Known Duplicate Page Table: delete confirmation button',
+      defaultMessage: 'Delete',
+      id: '8kylzj',
+    }),
+    closeOnSave: true,
+  }
+  dialogConfirm.value.callback = (result: DialogResult) => {
+    if (result === 'confirm') deletePageHashMatches(item.hash)
+  }
+}
+
 function deletePageHashMatches(hash: string) {
   if (hash in deletionRequests.value && deletionRequests.value[hash]!.success) return
 

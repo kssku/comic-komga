@@ -650,6 +650,9 @@
   "EzOmuX": {
     "defaultMessage": "创建时间"
   },
+  "F3Jb1o": {
+    "defaultMessage": "这会从书籍文件本身删除 {count} 页（{size}）。库挂载上的文件会被改写，Komga 无法还原。"
+  },
   "FBGnzt": {
     "defaultMessage": "已存在同名阅读列表"
   },
@@ -2539,6 +2542,9 @@
   },
   "uY7N6Z": {
     "defaultMessage": "媒体类型"
+  },
+  "uZn4hH": {
+    "defaultMessage": "删除重复页"
   },
   "uoc99F": {
     "defaultMessage": "在大型库或旧硬件上会消耗大量资源"

@@ -18,11 +18,17 @@ fork 自己维护迁移，时间戳可能与稍后进入的上游迁移交错（
 因此 `application.yml` 默认开了 `spring.flyway.out-of-order: true`，任务库的 Flyway
 （`FlywayTasksMigrationInitializer`）也跟着这个开关走。全新安装不受影响。
 
-### 0.2 合并后待重做
+### 0.2 单行本 / 多卷切换（已在新结构上重做）
 
-**单行本 / 多卷切换视图**：`next-ui/src/pages/libraries/[viewId]/series.vue` 上游已重构成
-`ItemBrowser` + `asItems` 结构，fork 原来的「单行本用 BookCard 渲染」工具栏与卡片分叉
-在合并时用了官方版本，**该视图暂时丢失**，需在新结构上重做。
+`next-ui/src/pages/libraries/[viewId]/series.vue` 在官方 1.30 的
+`ItemBrowser` 结构上重新实现了 LANraragi 式的三分切换（All / Series / One-shots）：
+
+- 切换驱动的是**同一个** `oneshot` 过滤器（`filters.oneshot.filter.i`），与筛选抽屉天然同步，
+  状态也进 URL（`?oneshot={"i":"i"}`）
+- 单行本模式换数据源：series 列表 → **book 列表**（`oneShot: isTrue`），排序用
+  `sortBooks` 的键（series + number）单独持久化
+- 卡片用 `BookCard`（带系列名、CBZ 格式），多卷模式仍是 `SeriesCard` / `SeriesCardWide`
+- 验证：浏览器实测 WNACG 库「One-shots」→ 书卡平铺、封面 200、计数 150,763
 
 ---
 

@@ -35,6 +35,18 @@ class TaskEmitter(
     submitTask(Task.ScanLibrary(libraryId, scanDeep, priority))
   }
 
+  /**
+   * CUSTOM FORK: 只扫一个子路径。下载完成后触发单个桶目录的扫描，
+   * 避免为了一本书去 diff 15 万个文件。
+   */
+  fun scanLibraryPath(
+    libraryId: String,
+    path: String,
+    priority: Int = DEFAULT_PRIORITY,
+  ) {
+    submitTask(Task.ScanLibraryPath(libraryId, path, priority))
+  }
+
   fun emptyTrash(
     libraryId: String,
     priority: Int = DEFAULT_PRIORITY,

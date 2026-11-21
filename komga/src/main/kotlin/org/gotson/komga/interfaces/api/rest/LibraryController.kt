@@ -232,9 +232,17 @@ class LibraryController(
   fun libraryScan(
     @PathVariable libraryId: String,
     @RequestParam(required = false) deep: Boolean = false,
+    // CUSTOM FORK: 可选的作用域扫描。相对库根目录的路径（目录或文件），
+    // 只 diff 这一个子目录。给下载完成通知用：整库 15 万本要 50 秒，
+    // 一个桶目录只要毫秒级。
+    @RequestParam(required = false) path: String? = null,
   ) {
     libraryRepository.findByIdOrNull(libraryId)?.let { library ->
-      taskEmitter.scanLibrary(library.id, deep, HIGHEST_PRIORITY)
+      if (path.isNullOrBlank()) {
+        taskEmitter.scanLibrary(library.id, deep, HIGHEST_PRIORITY)
+      } else {
+        taskEmitter.scanLibraryPath(library.id, path, HIGHEST_PRIORITY)
+      }
     } ?: throw ResponseStatusException(HttpStatus.NOT_FOUND)
   }
 

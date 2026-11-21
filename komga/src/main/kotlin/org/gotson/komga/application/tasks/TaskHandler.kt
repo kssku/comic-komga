@@ -52,6 +52,11 @@ class TaskHandler(
     try {
       measureTime {
         when (task) {
+          is Task.ScanLibraryPath ->
+            libraryRepository.findByIdOrNull(task.libraryId)?.let { library ->
+              libraryContentLifecycle.scanPath(library, task.path)
+            } ?: logger.warn { "Cannot execute task $task: Library does not exist" }
+
           is Task.ScanLibrary ->
             libraryRepository.findByIdOrNull(task.libraryId)?.let { library ->
               // CUSTOM FORK: suspend live Lucene indexing during the scan, rebuild once after.

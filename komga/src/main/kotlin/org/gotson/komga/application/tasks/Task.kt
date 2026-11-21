@@ -27,6 +27,27 @@ sealed class Task(
     override fun toString(): String = "ScanLibrary(libraryId='$libraryId', scanDeep='$scanDeep', priority='$priority')"
   }
 
+  /**
+   * CUSTOM FORK: 只扫库里的一个子路径（桶目录，或单个文件所在的目录）。
+   *
+   * 为什么需要：整库 name-diff 在 15 万本的 FUSE 挂载上要 50 秒，而「刚下完一本书」
+   * 只影响一个桶目录（几千个文件，毫秒级）。下载完成通知用这个任务，把可见延迟
+   * 从分钟级压到秒级，也不必为一次落盘去 diff 整个库。
+   *
+   * [path] 是**相对库根目录**的路径；越界（`..`、绝对路径、逃出 root 的路径）
+   * 在校验处被拒绝，不会扫到库外去。
+   */
+  class ScanLibraryPath(
+    val libraryId: String,
+    val path: String,
+    priority: Int = DEFAULT_PRIORITY,
+  ) : Task(priority) {
+    // 同一路径的重复请求合并；不同路径互不去重。
+    override val uniqueId = "SCAN_LIBRARY_PATH_${libraryId}_$path"
+
+    override fun toString(): String = "ScanLibraryPath(libraryId='$libraryId', path='$path', priority='$priority')"
+  }
+
   class FindBooksToConvert(
     val libraryId: String,
     priority: Int = DEFAULT_PRIORITY,

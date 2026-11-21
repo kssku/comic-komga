@@ -38,19 +38,30 @@ class FastLibraryScanner {
     oneshotDir: String,
     dbIdByUrl: Map<String, String>,
     extensions: Set<String>,
+    scope: Path? = null,
   ): Plan? {
     val base = root.resolve(oneshotDir)
     if (!Files.isDirectory(base)) return null
 
     val diskPaths = mutableListOf<Path>()
-    Files.newDirectoryStream(base).use { buckets ->
-      for (bucket in buckets) {
-        // 目录数量很少（本库 9 个），这一次 stat 值得付。
-        if (!Files.isDirectory(bucket)) continue
-        Files.newDirectoryStream(bucket).use { files ->
-          for (file in files) {
-            // 关键：这里**不** stat。扩展名是纯字符串判断。
-            if (file.extension.lowercase() in extensions) diskPaths.add(file)
+    if (scope != null) {
+      // 作用域扫描：只 readdir 这一个目录（一个桶，几千个文件）。
+      // dbIdByUrl 已由调用方裁剪到同一作用域，所以这里的 gone 判定是安全的。
+      Files.newDirectoryStream(scope).use { files ->
+        for (file in files) {
+          if (Files.isRegularFile(file) && file.extension.lowercase() in extensions) diskPaths.add(file)
+        }
+      }
+    } else {
+      Files.newDirectoryStream(base).use { buckets ->
+        for (bucket in buckets) {
+          // 目录数量很少（本库 9 个），这一次 stat 值得付。
+          if (!Files.isDirectory(bucket)) continue
+          Files.newDirectoryStream(bucket).use { files ->
+            for (file in files) {
+              // 关键：这里**不** stat。扩展名是纯字符串判断。
+              if (file.extension.lowercase() in extensions) diskPaths.add(file)
+            }
           }
         }
       }

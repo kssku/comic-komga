@@ -43,6 +43,9 @@ import org.springframework.context.ApplicationEventPublisher
 import org.springframework.data.domain.Pageable
 import org.springframework.stereotype.Service
 import org.springframework.transaction.support.TransactionTemplate
+import java.net.URI
+import java.nio.file.Files
+import java.nio.file.Path
 import java.nio.file.Paths
 import java.time.LocalDateTime
 import kotlin.time.measureTime
@@ -54,6 +57,12 @@ private const val SCAN_PERSIST_CHUNK = 200
 private const val BULK_INDEX_THRESHOLD = 1000
 
 private val logger = KotlinLogging.logger {}
+
+/**
+ * CUSTOM FORK: 与 [FastLibraryScanner] / [FileSystemScanner] 完全一致的 URL 形式，
+ * 用于按作用域过滤库里的 book.url（file: 加绝对路径）。
+ */
+private fun fileUrlFor(path: Path): String = URI("file", "", path.toAbsolutePath().toString(), null).toURL().toString()
 
 @Service
 class LibraryContentLifecycle(
@@ -140,7 +149,10 @@ class LibraryContentLifecycle(
    *
    * @return true 表示已处理完；false 表示不适用，调用方回退全量扫描。
    */
-  private fun scanByNameDiff(library: Library): Boolean {
+  private fun scanByNameDiff(
+    library: Library,
+    scope: Path? = null,
+  ): Boolean {
     val lrr = komgaProperties.lrrPathMode
     if (!lrr.enabled || lrr.oneshotDir.isBlank()) return false
 
@@ -152,12 +164,17 @@ class LibraryContentLifecycle(
         if (library.scanEpub) add("epub")
       }
 
+    // 作用域扫描时，只保留该子目录下的库记录：否则「消失检测」会把库里的
+    // 其余 15 万本全判成 gone 并软删除——这是最危险的一步，必须按作用域裁掉。
+    val scopeUrlPrefix = scope?.let { fileUrlFor(it) + "/" }
     val dbIdByUrl =
       bookRepository
         .findAllIdAndUrlByLibraryIdNotDeleted(library.id)
-        .associate { it.second to it.first }
+        .map { it.second to it.first }
+        .filter { (url, _) -> scopeUrlPrefix == null || url.startsWith(scopeUrlPrefix) }
+        .toMap()
 
-    val plan = fastLibraryScanner.planOneshots(root, lrr.oneshotDir, dbIdByUrl, extensions) ?: return false
+    val plan = fastLibraryScanner.planOneshots(root, lrr.oneshotDir, dbIdByUrl, extensions, scope) ?: return false
     // 首次登记整库（或一次补进来很多）时跳过逐本 stat，见下方注释。
     val bulkFirstIndex = plan.newPaths.size > BULK_INDEX_THRESHOLD
     val startedAt = System.nanoTime()
@@ -234,6 +251,51 @@ class LibraryContentLifecycle(
       "Name-diff scan of library ${library.name}: disk=${plan.diskCount} db=${plan.dbCount} " +
         "new=${plan.newPaths.size} gone=${plan.goneBookIds.size} in ${elapsedMs} ms"
     }
+    return true
+  }
+
+  /**
+   * CUSTOM FORK: 只扫库内一个子路径（相对库根）。
+   *
+   * 用于「刚下完一本书」的即时通知：整库 name-diff 在 FUSE 上要 50 秒，
+   * 而一个桶目录只有几千个文件。作用域内同样做「新增 / 消失」判定
+   * （消失判定已在 [scanByNameDiff] 里按作用域裁剪过，不会误删库内其他书）。
+   *
+   * 越界路径（`..`、绝对路径、解析后逃出 root）一律拒绝：扫库外目录既没意义，
+   * 也可能被用来探测文件系统。
+   *
+   * @param relativePath 相对库根目录的路径，可以是目录，也可以是文件（取其父目录）
+   * @return true 表示已按作用域处理；false 表示不支持作用域扫描，调用方应回落整库
+   */
+  fun scanPath(
+    library: Library,
+    relativePath: String,
+  ): Boolean {
+    val root = Paths.get(library.root.toURI()).toAbsolutePath().normalize()
+    val candidate =
+      try {
+        root.resolve(relativePath).normalize()
+      } catch (e: Exception) {
+        logger.warn(e) { "Scoped scan: cannot resolve '$relativePath' under $root" }
+        return false
+      }
+    if (!candidate.startsWith(root) || candidate == root) {
+      logger.warn { "Scoped scan: '$relativePath' is outside library root $root, refusing" }
+      return false
+    }
+    // 文件 → 扫它所在的桶目录；目录 → 直接扫。
+    val scope = if (Files.isDirectory(candidate)) candidate else candidate.parent ?: return false
+    if (!Files.isDirectory(scope)) {
+      logger.info { "Scoped scan: '$scope' does not exist (yet), nothing to do" }
+      return true
+    }
+
+    if (komgaProperties.scan.nameDiffEnabled && komgaProperties.lrrPathMode.enabled) {
+      if (scanByNameDiff(library, scope)) return true
+    }
+    // 非 oneshots 布局的库没有作用域扫描实现，退回整库（正确性优先于速度）。
+    logger.info { "Scoped scan: fallback to full scan for library ${library.name}" }
+    scanRootFolder(library)
     return true
   }
 

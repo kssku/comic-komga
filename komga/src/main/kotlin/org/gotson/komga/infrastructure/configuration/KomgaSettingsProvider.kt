@@ -57,13 +57,13 @@ class KomgaSettingsProvider(
       field = value
     }
 
-  // CUSTOM FORK: upstream defaults to 1 worker. That is fine for a small library, but a FIRST
-  // ingest of 190k books enqueues ~570k tasks; with 1 thread it never finishes (and the 16
-  // worker threads of the pool are a lie — processAvailableTask only fans out to corePoolSize).
-  // Default to the CPU count (capped at 16), which is the value a user would set by hand anyway.
+  // CUSTOM FORK note: keep the upstream default (1). Raising it in code changes concurrency
+  // semantics and breaks TaskProcessorTest's "with a pool of 1, similar tasks run one at a
+  // time" contract. A FIRST ingest of 190k books needs this set explicitly to 16 (and the
+  // 16-thread task pool is otherwise a lie, since processAvailableTask only fans out to
+  // corePoolSize) — do it at deploy time: PUT /api/v1/settings or the server settings table.
   var taskPoolSize: Int =
-    serverSettingsDao.getSettingByKey(Settings.TASK_POOL_SIZE.name, Int::class.java)
-      ?: Runtime.getRuntime().availableProcessors().coerceAtMost(16)
+    serverSettingsDao.getSettingByKey(Settings.TASK_POOL_SIZE.name, Int::class.java) ?: 1
     set(value) {
       serverSettingsDao.saveSetting(Settings.TASK_POOL_SIZE.name, value)
       field = value

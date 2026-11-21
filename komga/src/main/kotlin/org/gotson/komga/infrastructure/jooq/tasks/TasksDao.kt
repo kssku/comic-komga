@@ -42,8 +42,8 @@ class TasksDao(
    * `WHERE OWNER IS NULL AND (...)` + `ORDER BY PRIORITY DESC, LAST_MODIFIED_DATE LIMIT 1`,
    * which the new idx__tasks__queue index serves directly.
    */
-  private fun blockedGroupIds(): List<String> =
-    dslRO
+  private fun blockedGroupIds(dsl: DSLContext): List<String> =
+    dsl
       .selectDistinct(t.GROUP_ID)
       .from(t)
       .where(t.OWNER.isNotNull.and(t.GROUP_ID.isNotNull))
@@ -60,7 +60,7 @@ class TasksDao(
   override fun hasAvailable(): Boolean =
     dslRO.fetchExists(
       t,
-      tasksAvailableCondition(blockedGroupIds()),
+      tasksAvailableCondition(blockedGroupIds(dslRO)),
     )
 
   @Transactional
@@ -68,7 +68,9 @@ class TasksDao(
     val task =
       dslRW
         .selectBase()
-        .where(tasksAvailableCondition(blockedGroupIds()))
+        // MUST use the RW context: takeFirst is @Transactional and the write pool may hold the
+        // only connection (no separate read pool), so querying through dslRO would self-lock.
+        .where(tasksAvailableCondition(blockedGroupIds(dslRW)))
         .orderBy(t.PRIORITY.desc(), t.LAST_MODIFIED_DATE)
         .limit(1)
         .fetchOne()

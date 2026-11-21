@@ -58,7 +58,11 @@ class DataSourcesConfiguration(
         if (it.isEmpty())
           ""
         else
-          "?" + it.map { (key, value) -> "$key=$value" }.joinToString(separator = "&")
+          // The db file may already carry a query string (e.g. "file::memory:?cache=shared");
+          // appending another "?" would merge the pragmas into that parameter's value and
+          // SQLite fails with "no such access mode".
+          (if (databaseProps.file.contains("?")) "&" else "?") +
+            it.map { (key, value) -> "$key=$value" }.joinToString(separator = "&")
       }
 
     val dataSource =

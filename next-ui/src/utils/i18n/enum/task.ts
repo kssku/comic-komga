@@ -6,6 +6,12 @@ export const taskNameMessage: Record<string, MessageDescriptor> = {
     defaultMessage: 'Scan library',
     id: 'kHmCVM',
   }),
+  // CUSTOM FORK: scoped scan task (POST /libraries/{id}/scan?path=...)
+  ScanLibraryPath: defineMessage({
+    description: 'Task name: ScanLibraryPath',
+    defaultMessage: 'Scan library folder',
+    id: 'scopedScanPath',
+  }),
   FindBooksToConvert: defineMessage({
     description: 'Task name: FindBooksToConvert',
     defaultMessage: 'Find books to convert',

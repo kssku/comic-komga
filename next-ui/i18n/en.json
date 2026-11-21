@@ -247,6 +247,10 @@
     "defaultMessage": "Click to confirm",
     "description": "Confirmation dialog: default checkbox label"
   },
+  "42E/dM": {
+    "defaultMessage": "One-shots",
+    "description": "Series list filter: single-volume works only"
+  },
   "464rk3": {
     "defaultMessage": "Select series",
     "description": "Import books table: series cell: select series button"
@@ -354,6 +358,10 @@
   "6WDISV": {
     "defaultMessage": "Page not found",
     "description": "Page not found view: error message title"
+  },
+  "6f8q+L": {
+    "defaultMessage": "Series",
+    "description": "Series list filter: multi-volume series only"
   },
   "6nCIPn": {
     "defaultMessage": "Type",
@@ -1142,6 +1150,10 @@
   "PvKF7E": {
     "defaultMessage": "Library deleted: {library}",
     "description": "Snackbar notification shown upon successful library deletion"
+  },
+  "Q3XcC5": {
+    "defaultMessage": "All",
+    "description": "Series list filter: show both multi-volume series and single-volume works"
   },
   "QALnuE": {
     "defaultMessage": "File type",
@@ -2651,10 +2663,6 @@
     "defaultMessage": "Delete empty collections after scan",
     "description": "Server settings: checkbox to delete empty collections after scan"
   },
-  "pHycdf": {
-    "defaultMessage": "The book file is yet to be analyzed",
-    "description": "Book view: media unknown"
-  },
   "pR3VdQ": {
     "defaultMessage": "Series",
     "description": "History Table table header: Series"
@@ -2802,6 +2810,10 @@
   "sbwSuO": {
     "defaultMessage": "Realtime connection to the server is not available. UI elements may not update correctly.",
     "description": "Banner: realtime connection could not be established "
+  },
+  "scopedScanPath": {
+    "defaultMessage": "Scan library folder",
+    "description": "Task name: ScanLibraryPath"
   },
   "sdNz1F": {
     "defaultMessage": "Empty trash",
@@ -3030,6 +3042,10 @@
   "xpBvz8": {
     "defaultMessage": "Release year",
     "description": "Filter panel: Release year"
+  },
+  "xvKwoU": {
+    "defaultMessage": "Not analyzed yet - you can read it right away. Analysis (page count, dimensions, cover) is optional and runs on first open or on demand.",
+    "description": "Book view: media unknown"
   },
   "y1Fk/a": {
     "defaultMessage": "No results",

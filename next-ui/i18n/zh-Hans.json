@@ -1805,6 +1805,9 @@
   "sbwSuO": {
     "defaultMessage": "无法与服务器建立实时连接，界面元素可能无法正确更新。"
   },
+  "scopedScanPath": {
+    "defaultMessage": "扫描库目录"
+  },
   "sdNz1F": {
     "defaultMessage": "清理垃圾"
   },

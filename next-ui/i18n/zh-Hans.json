@@ -68,6 +68,9 @@
   "/YxHru": {
     "defaultMessage": "部分选中的书籍是重复的"
   },
+  "/bathK": {
+    "defaultMessage": "只允许低于"
+  },
   "/lE31l": {
     "defaultMessage": "强制 Kobo 同步"
   },
@@ -148,6 +151,9 @@
   },
   "1VkZao": {
     "defaultMessage": "更多"
+  },
+  "1bxWGd": {
+    "defaultMessage": "编辑系列元数据"
   },
   "1dgTdi": {
     "defaultMessage": "分析"
@@ -457,6 +463,9 @@
   },
   "AMQANB": {
     "defaultMessage": "添加自定义类型"
+  },
+  "AeA9Ka": {
+    "defaultMessage": "无限制"
   },
   "Ai7bBV": {
     "defaultMessage": "{count, plural, one {# 页} other {# 页} }"
@@ -1382,6 +1391,9 @@
   "YeUvoE": {
     "defaultMessage": "自定义职务..."
   },
+  "Yf4DJ2": {
+    "defaultMessage": "界面"
+  },
   "Ym48fa": {
     "defaultMessage": "近期无事件"
   },
@@ -2207,6 +2219,9 @@
   "mQ3hSR": {
     "defaultMessage": "标签限制"
   },
+  "mtUacw": {
+    "defaultMessage": "编辑书籍元数据"
+  },
   "n0TnQ2": {
     "defaultMessage": "服务器无法访问"
   },
@@ -2284,6 +2299,9 @@
   },
   "oWsqnh": {
     "defaultMessage": "此 API 密钥有何用途？"
+  },
+  "od545m": {
+    "defaultMessage": "我的账户"
   },
   "oyeyK/": {
     "defaultMessage": "缩略图"
@@ -2401,6 +2419,9 @@
   },
   "ruWj+g": {
     "defaultMessage": "下载"
+  },
+  "rw/Dkw": {
+    "defaultMessage": "界面"
   },
   "rw5pw5": {
     "defaultMessage": "视觉"
@@ -2612,6 +2633,9 @@
   "wk+b55": {
     "defaultMessage": "编辑"
   },
+  "wmGcF+": {
+    "defaultMessage": "排除高于"
+  },
   "wwiazg": {
     "defaultMessage": "剪贴板中未找到有效图片"
   },
@@ -2626,6 +2650,9 @@
   },
   "xSNdDU": {
     "defaultMessage": "此阅读列表将被删除<ul><li>系列和书籍不会被删除。</li></ul><b>此操作无法撤销。</b>"
+  },
+  "xYGXuU": {
+    "defaultMessage": "详情"
   },
   "xYp/8u": {
     "defaultMessage": "选择一本书"
@@ -2644,6 +2671,9 @@
   },
   "xpBvz8": {
     "defaultMessage": "发行年份"
+  },
+  "xvKwoU": {
+    "defaultMessage": "尚未分析——可以直接阅读。分析（页数、尺寸、封面）是可选的，会在首次打开或按需时进行。"
   },
   "y1Fk/a": {
     "defaultMessage": "无结果"

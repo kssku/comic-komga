@@ -127,7 +127,15 @@ class LibraryContentLifecycle(
     metaByName: Map<String, BookMetadataPatch> = emptyMap(),
   ) {
     if (pairs.isEmpty()) return
-    val seriesList = pairs.map { it.first }
+    // CUSTOM FORK (bug): SERIES.BOOK_COUNT was never written on this path, so every series in the
+    // library reported 0 books (the API's booksCount reads this column directly). Counts are exact
+    // here: one book per series on the one-shot path, and duplicated series ids keep their total.
+    val bookCountPerSeries = pairs.groupingBy { it.first.id }.eachCount()
+    val seriesList =
+      pairs
+        .map { it.first }
+        .distinctBy { it.id }
+        .map { it.copy(bookCount = bookCountPerSeries[it.id] ?: 1) }
     val books = pairs.map { (series, book) -> book.copy(seriesId = series.id) }
 
     fun titleOf(book: Book): String = metaByName[book.name]?.title ?: book.name

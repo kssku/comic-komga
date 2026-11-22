@@ -145,6 +145,12 @@ class SeriesLifecycle(
         }.let { bookMetadataRepository.insert(it) }
     }
 
+    // CUSTOM FORK (bug): SERIES.BOOK_COUNT was only maintained by sortBooks(), so series reported
+    // 0 books until someone reordered them — and the API's booksCount reads this column directly.
+    seriesRepository.findByIdOrNull(series.id)?.let {
+      seriesRepository.update(it.copy(bookCount = bookRepository.findAllBySeriesId(series.id).size), false)
+    }
+
     toAdd.forEach { eventPublisher.publishEvent(DomainEvent.BookAdded(it)) }
   }
 

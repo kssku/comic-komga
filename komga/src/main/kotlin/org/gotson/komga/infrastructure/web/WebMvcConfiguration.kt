@@ -28,6 +28,7 @@ class WebMvcConfiguration : WebMvcConfigurer {
       .addResourceHandler(
         "/index.html",
         "/index-next.html",
+        "/index-classic.html",
         "/favicon.ico",
         "/favicon-16x16.png",
         "/favicon-32x32.png",

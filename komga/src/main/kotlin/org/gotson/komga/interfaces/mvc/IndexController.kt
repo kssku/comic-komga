@@ -28,7 +28,12 @@ class IndexController(
   @GetMapping(value = ["/classic", "/classic/**"])
   fun indexClassic(model: Model): String {
     model.addAttribute("baseUrl", baseUrl)
-    return "index"
+    // CUSTOM FORK (fix 404): the classic bundle is a Vue 2 SPA whose router base is "/", so serving
+    // it for "/classic/**" left every deep link matching no route — and /classic/book/{id}/read is
+    // exactly what the new UI links to (see next-ui/src/api/links.ts). This template strips the
+    // "/classic" prefix from the address bar before the app boots, so the router resolves the real
+    // path. It is otherwise identical to "index".
+    return "index-classic"
   }
 
   @GetMapping(value = ["/next", "/next/**"])
